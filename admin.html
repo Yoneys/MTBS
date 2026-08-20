@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTBS Admin – Přehled žádostí</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --navy:    #0d1b2e;
+  --navy-2:  #162540;
+  --navy-3:  #1e3255;
+  --steel:   #2a547e;
+  --sky:     #4a9eca;
+  --gold:    #c8922a;
+  --gold-2:  #e0aa45;
+  --cream:   #f4efe6;
+  --warm:    #faf7f2;
+  --muted:   #6b7280;
+  --border:  rgba(15,31,53,.1);
+  --success: #166534;
+  --warning: #92400e;
+  --error-c: #991b1b;
+  --sb:      240px; /* sidebar width */
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--navy);
+  min-height: 100vh;
+  color: #f4efe6;
+}
+
+/* ── LOGIN SCREEN ──────────────────────────────────────────────────────── */
+#loginScreen {
+  min-height: 100vh;
+  display: flex; align-items:center; justify-content:center;
+  padding: 1.5rem;
+  background: var(--navy);
+  background-image:
+    radial-gradient(ellipse 50% 60% at 20% 50%, rgba(74,158,202,.08) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 50% at 80% 30%, rgba(200,146,42,.06) 0%, transparent 50%);
+}
+
+.login-box {
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 14px;
+  padding: 3rem 2.5rem;
+  width: 100%; max-width: 400px;
+  backdrop-filter: blur(12px);
+}
+
+.login-logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.15rem; color: var(--cream);
+  display: flex; align-items:center; gap:.6rem;
+  margin-bottom: .35rem;
+}
+.logo-dot { width:7px; height:7px; background:var(--gold); border-radius:50%; }
+.login-sub { font-size:.68rem; color:rgba(244,239,230,.35); letter-spacing:.12em; text-transform:uppercase; margin-bottom:2.25rem; }
+
+.lf { display:flex; flex-direction:column; gap:.35rem; margin-bottom:1.15rem; }
+.lf label { font-size:.75rem; font-weight:600; color:rgba(244,239,230,.65); }
+.lf input {
+  font-family:'DM Sans',sans-serif; font-size:.9rem;
+  padding:.7rem 1rem;
+  border: 1.5px solid rgba(255,255,255,.1);
+  border-radius: 7px;
+  background: rgba(255,255,255,.06);
+  color: var(--cream); outline:none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.lf input::placeholder { color:rgba(244,239,230,.2); }
+.lf input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(200,146,42,.15);
+}
+
+.login-btn {
+  width:100%; background:var(--gold); color:var(--navy);
+  border:none; padding:.85rem;
+  border-radius:7px; font-family:'DM Sans',sans-serif;
+  font-size:.9rem; font-weight:700; cursor:pointer;
+  transition: background .2s, transform .15s;
+  margin-top:.35rem; letter-spacing:.03em;
+}
+.login-btn:hover { background:var(--gold-2); }
+.login-btn:active { transform:scale(.99); }
+.login-btn:disabled { opacity:.6; cursor:not-allowed; }
+
+.login-err {
+  background:rgba(153,27,27,.15); border:1px solid rgba(153,27,27,.35);
+  color:#fca5a5; padding:.7rem 1rem; border-radius:7px;
+  font-size:.8rem; margin-bottom:1.1rem; display:none;
+}
+.login-err.show { display:block; }
+
+.login-note {
+  margin-top:1.75rem; padding-top:1.25rem;
+  border-top:1px solid rgba(255,255,255,.06);
+  font-size:.68rem; color:rgba(244,239,230,.22); text-align:center; line-height:1.6;
+}
+
+/* ── APP SHELL ─────────────────────────────────────────────────────────── */
+#appShell { display:none; min-height:100vh; }
+
+/* Sidebar */
+.sidebar {
+  position:fixed; top:0; left:0; bottom:0; width:var(--sb); z-index:50;
+  background:var(--navy-2);
+  border-right:1px solid rgba(255,255,255,.06);
+  display:flex; flex-direction:column;
+}
+.sb-logo {
+  padding:1.4rem 1.5rem 1rem;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.sb-logo-name {
+  font-family:'DM Serif Display',serif; font-size:1rem; color:var(--cream);
+  display:flex; align-items:center; gap:.5rem;
+}
+.sb-logo-sub { font-size:.62rem; color:rgba(244,239,230,.3); letter-spacing:.1em; text-transform:uppercase; margin-top:.2rem; }
+.sb-nav { flex:1; padding:1.25rem 0; }
+.sb-item {
+  display:flex; align-items:center; gap:.7rem;
+  padding:.6rem 1.4rem; color:rgba(244,239,230,.5);
+  font-size:.8rem; font-weight:500;
+  cursor:pointer; text-decoration:none;
+  border-left:3px solid transparent;
+  transition:all .15s;
+}
+.sb-item:hover { color:var(--cream); background:rgba(255,255,255,.04); }
+.sb-item.active { color:var(--gold-2); border-left-color:var(--gold); background:rgba(200,146,42,.08); }
+.sb-badge {
+  margin-left:auto; background:var(--gold); color:var(--navy);
+  font-size:.6rem; font-weight:700; padding:.15rem .45rem; border-radius:10px;
+}
+.sb-footer {
+  padding:1rem 1.4rem;
+  border-top:1px solid rgba(255,255,255,.06);
+}
+.sb-user { font-size:.75rem; color:rgba(244,239,230,.4); margin-bottom:.65rem; word-break:break-all; }
+.logout-btn {
+  width:100%; background:none;
+  border:1px solid rgba(255,255,255,.1); color:rgba(244,239,230,.45);
+  padding:.5rem; border-radius:6px; font-family:'DM Sans',sans-serif;
+  font-size:.75rem; cursor:pointer; transition:all .15s;
+}
+.logout-btn:hover { border-color:var(--error-c); color:#fca5a5; }
+
+/* Main area */
+.main { margin-left:var(--sb); background:#f0ede8; min-height:100vh; color:var(--navy); }
+
+.topbar {
+  background:white; border-bottom:1px solid var(--border);
+  padding:1.25rem 2.5rem;
+  display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;
+}
+.topbar-title { font-family:'DM Serif Display',serif; font-size:1.5rem; color:var(--navy); }
+.topbar-sub   { font-size:.75rem; color:var(--muted); margin-top:.15rem; }
+
+/* Stats */
+.stats-row {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:1.25rem;
+  padding:1.75rem 2.5rem;
+}
+.stat-c {
+  background:white; border:1px solid var(--border); border-radius:10px;
+  padding:1.25rem 1.5rem;
+}
+.stat-c-lbl { font-size:.65rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:.35rem; }
+.stat-c-val { font-family:'DM Serif Display',serif; font-size:2rem; line-height:1; }
+.stat-c-val.gold  { color:var(--gold); }
+.stat-c-val.blue  { color:var(--steel); }
+.stat-c-val.green { color:var(--success); }
+
+/* Filters */
+.filters { padding:0 2.5rem 1.25rem; display:flex; gap:1rem; flex-wrap:wrap; align-items:center; }
+.search-wrap { position:relative; flex:1; min-width:200px; }
+.search-wrap input {
+  width:100%; padding:.6rem .9rem .6rem 2.2rem;
+  border:1.5px solid var(--border); border-radius:7px;
+  background:white; font-family:'DM Sans',sans-serif;
+  font-size:.83rem; color:var(--navy); outline:none;
+  transition:border-color .2s;
+}
+.search-wrap input:focus { border-color:var(--steel); }
+.search-icon { position:absolute; left:.75rem; top:50%; transform:translateY(-50%); font-size:.8rem; color:var(--muted); pointer-events:none; }
+.filter-sel {
+  padding:.6rem .85rem; border:1.5px solid var(--border); border-radius:7px;
+  background:white; font-family:'DM Sans',sans-serif; font-size:.83rem;
+  color:var(--navy); outline:none; cursor:pointer;
+}
+.export-btn {
+  background:var(--navy); color:var(--cream);
+  border:none; padding:.6rem 1.25rem; border-radius:7px;
+  font-family:'DM Sans',sans-serif; font-size:.8rem; font-weight:600;
+  cursor:pointer; transition:background .15s; display:flex; align-items:center; gap:.4rem;
+}
+.export-btn:hover { background:var(--navy-3); }
+
+/* Table */
+.table-wrap { padding:0 2.5rem 2.5rem; }
+.table-card { background:white; border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+table { width:100%; border-collapse:collapse; }
+thead { background:var(--navy); }
+thead th {
+  padding:.85rem 1rem; text-align:left;
+  font-size:.62rem; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; color:rgba(244,239,230,.55);
+}
+tbody tr { border-bottom:1px solid rgba(15,31,53,.05); transition:background .15s; }
+tbody tr:last-child { border-bottom:none; }
+tbody tr:hover { background:rgba(15,31,53,.02); cursor:pointer; }
+td { padding:.85rem 1rem; font-size:.8rem; vertical-align:top; }
+.td-name   { font-weight:600; color:var(--navy); }
+.td-sub    { font-size:.7rem; color:var(--muted); margin-top:2px; }
+.fee-num   { font-family:'DM Serif Display',serif; font-size:.92rem; }
+.fee-arr   { color:var(--muted); margin:0 .25rem; font-size:.75rem; }
+
+/* Badges */
+.badge {
+  display:inline-flex; align-items:center; gap:.25rem;
+  padding:.22rem .6rem; border-radius:20px;
+  font-size:.62rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; white-space:nowrap;
+}
+.badge.new         { background:#eff6ff; color:#1d4ed8; }
+.badge.in_progress { background:#fffbeb; color:var(--warning); }
+.badge.resolved    { background:#f0fdf4; color:var(--success); }
+
+/* Empty / loading */
+.empty { text-align:center; padding:4rem 2rem; color:var(--muted); }
+.empty-icon { font-size:2.5rem; margin-bottom:1rem; }
+.loading { text-align:center; padding:3rem; color:var(--muted); font-size:.85rem; }
+
+/* ── DETAIL MODAL ──────────────────────────────────────────────────────── */
+.overlay {
+  position:fixed; inset:0; z-index:200;
+  background:rgba(8,15,26,.75); backdrop-filter:blur(4px);
+  display:none; align-items:center; justify-content:center; padding:1rem;
+}
+.overlay.open { display:flex; }
+.modal {
+  background:white; border-radius:14px;
+  width:100%; max-width:560px; max-height:90vh; overflow-y:auto;
+  box-shadow:0 24px 80px rgba(0,0,0,.3);
+}
+.modal-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:1.4rem 1.75rem; border-bottom:1px solid var(--border);
+  position:sticky; top:0; background:white; z-index:2;
+}
+.modal-title { font-family:'DM Serif Display',serif; font-size:1.15rem; color:var(--navy); }
+.modal-close { background:none; border:none; font-size:1.4rem; cursor:pointer; color:var(--muted); line-height:1; }
+.modal-body  { padding:1.75rem; }
+
+.dr { display:grid; grid-template-columns:130px 1fr; gap:.5rem 1rem; margin-bottom:.7rem; align-items:start; }
+.dk { font-size:.65rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); padding-top:2px; }
+.dv { font-size:.85rem; color:var(--navy); word-break:break-word; }
+.dv a { color:var(--steel); }
+.modal-div { border:none; border-top:1px solid var(--border); margin:1.25rem 0; }
+
+.status-row { display:flex; align-items:center; gap:.85rem; margin-top:1.25rem; flex-wrap:wrap; }
+.status-sel {
+  flex:1; min-width:160px; padding:.55rem .8rem;
+  border:1.5px solid var(--border); border-radius:7px;
+  font-family:'DM Sans',sans-serif; font-size:.83rem; color:var(--navy);
+  background:var(--warm); outline:none; cursor:pointer;
+}
+.btn-save {
+  background:var(--navy); color:var(--cream); border:none;
+  padding:.55rem 1.2rem; border-radius:7px;
+  font-family:'DM Sans',sans-serif; font-size:.8rem; font-weight:600;
+  cursor:pointer; transition:background .15s;
+}
+.btn-save:hover { background:var(--navy-3); }
+.btn-del {
+  background:none; color:var(--error-c);
+  border:1px solid rgba(153,27,27,.25);
+  padding:.55rem 1.2rem; border-radius:7px;
+  font-family:'DM Sans',sans-serif; font-size:.8rem; font-weight:600;
+  cursor:pointer; transition:all .15s;
+}
+.btn-del:hover { background:rgba(153,27,27,.07); }
+.save-ok {
+  font-size:.75rem; color:var(--success); font-weight:600;
+  display:none; align-items:center; gap:.3rem;
+}
+.save-ok.show { display:flex; }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ────────────────────────────────────────────────────────────── -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo"><span class="logo-dot"></span>MTBS Holýšov</div>
+    <div class="login-sub">Administrace · Přihlášení</div>
+    <div class="login-err" id="loginErr"></div>
+    <form id="loginForm" novalidate>
+      <div class="lf">
+        <label for="l-email">E-mail</label>
+        <input type="email" id="l-email" placeholder="admin@mtbs.cz" autocomplete="email" required>
+      </div>
+      <div class="lf">
+        <label for="l-pass">Heslo</label>
+        <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="login-btn" id="loginBtn">Přihlásit se</button>
+    </form>
+    <div class="login-note">Přístup pouze pro oprávněné osoby.<br>Relace se automaticky ukončí po nečinnosti.</div>
+  </div>
+</div>
+
+<!-- ── APP ───────────────────────────────────────────────────────────────── -->
+<div id="appShell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-name"><span class="logo-dot"></span>MTBS Holýšov</div>
+      <div class="sb-logo-sub">Administrace</div>
+    </div>
+    <nav class="sb-nav">
+      <a class="sb-item active" href="#">
+        📋 Žádosti
+        <span class="sb-badge" id="newBadge">0</span>
+      </a>
+      <a class="sb-item" href="index.html" target="_blank">🌐 Zobrazit web</a>
+    </nav>
+    <div class="sb-footer">
+      <div class="sb-user" id="sbUser">—</div>
+      <button class="logout-btn" id="logoutBtn">Odhlásit se</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Žádosti o změnu</div>
+        <div class="topbar-sub" id="topbarSub">Načítám…</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-c"><div class="stat-c-lbl">Celkem</div><div class="stat-c-val" id="sCelkem">—</div></div>
+      <div class="stat-c"><div class="stat-c-lbl">Nové</div><div class="stat-c-val gold" id="sNove">—</div></div>
+      <div class="stat-c"><div class="stat-c-lbl">Probíhá</div><div class="stat-c-val blue" id="sProbíhá">—</div></div>
+      <div class="stat-c"><div class="stat-c-lbl">Vyřešené</div><div class="stat-c-val green" id="sVyresene">—</div></div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchIn" placeholder="Hledat dle jména, e-mailu, adresy…">
+      </div>
+      <select class="filter-sel" id="formTypeFilter">
+        <option value="">Všechny formuláře</option>
+        <option value="zmena_poplatku">Změna poplatků</option>
+        <option value="oznameni_osob">Oznámení osob</option>
+        <option value="zmena_platce">Změna plátce</option>
+        <option value="predavaci_protokol">Předávací protokol</option>
+      </select>
+      <select class="filter-sel" id="statusFilter">
+        <option value="">Všechny stavy</option>
+        <option value="new">Nové</option>
+        <option value="in_progress">Probíhá</option>
+        <option value="resolved">Vyřešené</option>
+      </select>
+      <button class="export-btn" id="exportBtn">⬇ Export CSV</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <div class="table-card">
+        <div class="loading" id="loadingEl">Načítám žádosti…</div>
+        <div class="empty" id="emptyEl" style="display:none">
+          <div class="empty-icon">📭</div>
+          <div>Žádné žádosti nenalezeny.</div>
+        </div>
+        <table id="mainTable" style="display:none">
+          <thead>
+            <tr>
+              <th>#</th><th>Datum</th><th>Typ žádosti</th>
+              <th>Žadatel</th><th>Stav</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── DETAIL MODAL ──────────────────────────────────────────────────────── -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">Detail žádosti</div>
+      <button class="modal-close" id="modalClose">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ── Supabase config – must match index.html ─────────────────────────────
+const SUPABASE_URL  = 'https://nrokpcfyrzmuvwlrmugx.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_KNtPHoMHflCdauw8iU1W2g_G4jl_H1s';
+// ────────────────────────────────────────────────────────────────────────
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let allRows  = [];
+let activeId = null;
+
+// ── Escape HTML ──────────────────────────────────────────────────────────
+const esc = s => String(s||'')
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+// ── Format date ──────────────────────────────────────────────────────────
+const fmtDate = iso => new Date(iso).toLocaleString('cs-CZ',
+  {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+// ── Form type labels ─────────────────────────────────────────────────────
+const FORM_LABELS = {
+  zmena_poplatku:    { icon:'💰', label:'Změna poplatků' },
+  oznameni_osob:     { icon:'👥', label:'Oznámení osob' },
+  zmena_platce:      { icon:'🔄', label:'Změna plátce' },
+  predavaci_protokol:{ icon:'📋', label:'Předávací protokol' },
+};
+function formLabel(type) {
+  const f = FORM_LABELS[type] || { icon:'📄', label: type };
+  return `<span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600">${f.icon} ${f.label}</span>`;
+}
+
+// ── Status badge ─────────────────────────────────────────────────────────
+function badge(s) {
+  const map = { new:['new','🔵 Nová'], in_progress:['in_progress','🟡 Probíhá'], resolved:['resolved','🟢 Vyřešena'] };
+  const [cls,lbl] = map[s]||['new','Nová'];
+  return `<span class="badge ${cls}">${lbl}</span>`;
+}
+
+// ── Get display name from data JSONB ──────────────────────────────────────
+function getName(r) {
+  const d = r.data || {};
+  return d.name || d.seller_name || d.old_name || '—';
+}
+function getContact(r) {
+  const d = r.data || {};
+  return { email: d.email || d.old_email || d.seller_email || '', address: d.address || d.flat_address || '' };
+}
+
+// ── Render table ─────────────────────────────────────────────────────────
+function render(data) {
+  const loading = document.getElementById('loadingEl');
+  const empty   = document.getElementById('emptyEl');
+  const table   = document.getElementById('mainTable');
+  const tbody   = document.getElementById('tableBody');
+
+  loading.style.display = 'none';
+
+  if (!data.length) {
+    empty.style.display  = 'block';
+    table.style.display  = 'none';
+    return;
+  }
+  empty.style.display  = 'none';
+  table.style.display  = 'table';
+
+  tbody.innerHTML = data.map(r => {
+    const c = getContact(r);
+    return `
+    <tr onclick="openModal(${r.id})">
+      <td style="color:var(--muted);font-size:.72rem">#${r.id}</td>
+      <td><div style="font-size:.75rem">${fmtDate(r.created_at)}</div></td>
+      <td>${formLabel(r.form_type)}</td>
+      <td>
+        <div class="td-name">${esc(getName(r))}</div>
+        ${c.email   ? `<div class="td-sub">${esc(c.email)}</div>`   : ''}
+        ${c.address ? `<div class="td-sub">${esc(c.address)}</div>` : ''}
+      </td>
+      <td>${badge(r.status)}</td>
+      <td style="text-align:center;font-size:1rem">›</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Update stats ─────────────────────────────────────────────────────────
+function updateStats(data) {
+  document.getElementById('sCelkem').textContent   = data.length;
+  const nNew = data.filter(r=>r.status==='new').length;
+  document.getElementById('sNove').textContent     = nNew;
+  document.getElementById('sProbíhá').textContent  = data.filter(r=>r.status==='in_progress').length;
+  document.getElementById('sVyresene').textContent = data.filter(r=>r.status==='resolved').length;
+  document.getElementById('newBadge').textContent  = nNew;
+  document.getElementById('topbarSub').textContent =
+    `Celkem ${data.length} žádostí · Aktualizováno ${new Date().toLocaleTimeString('cs-CZ')}`;
+}
+
+// ── Load data ─────────────────────────────────────────────────────────────
+async function loadData() {
+  const { data, error } = await sb
+    .from('submissions')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    document.getElementById('loadingEl').textContent = 'Chyba při načítání: ' + error.message;
+    return;
+  }
+  allRows = data || [];
+  updateStats(allRows);
+  applyFilters();
+}
+
+// ── Filters ───────────────────────────────────────────────────────────────
+function applyFilters() {
+  const search   = document.getElementById('searchIn').value.toLowerCase();
+  const status   = document.getElementById('statusFilter').value;
+  const formType = document.getElementById('formTypeFilter').value;
+  const filtered = allRows.filter(r => {
+    const d = r.data || {};
+    const ms = !search ||
+      JSON.stringify(d).toLowerCase().includes(search) ||
+      (r.form_type||'').toLowerCase().includes(search);
+    const mst = !status || r.status === status;
+    const mft = !formType || r.form_type === formType;
+    return ms && mst && mft;
+  });
+  render(filtered);
+}
+document.getElementById('searchIn').addEventListener('input', applyFilters);
+document.getElementById('statusFilter').addEventListener('change', applyFilters);
+document.getElementById('formTypeFilter').addEventListener('change', applyFilters);
+
+// ── Modal ─────────────────────────────────────────────────────────────────
+function openModal(id) {
+  activeId = id;
+  const r = allRows.find(x => x.id === id);
+  if (!r) return;
+
+  // Build human-readable field labels
+  const FIELD_LABELS = {
+    name:'Jméno',address:'Adresa',email:'E-mail',phone:'Telefon',mobile:'Mobil',
+    flat_number:'Číslo bytu',flat_size:'Velikost (m²)',flat_layout:'Dispozice',flat_floor:'Podlaží',flat_address:'Adresa bytu',
+    fee_current:'Akt. poplatek (Kč)',fee_requested:'Požad. poplatek (Kč)',fee_other:'Ostatní poplatek (Kč)',note:'Poznámka',
+    old_name:'Původní plátce',old_address:'Adresa',old_mobile:'Mobil',old_phone:'Telefon',old_email:'E-mail',
+    new_name:'Nový plátce',new_address:'Adresa',new_mobile:'Mobil',new_phone:'Telefon',new_email:'E-mail',
+    change_date:'Datum změny',reason:'Důvod změny',
+    reg_date_from:'Přihlášení od',unreg_date_from:'Odhlášení od',total_persons:'Celkem osob',
+    reg_name_1:'Přihlášení – jméno 1',reg_dob_1:'Datum nar. 1',reg_rel_1:'Vztah 1',
+    reg_name_2:'Přihlášení – jméno 2',reg_dob_2:'Datum nar. 2',reg_rel_2:'Vztah 2',
+    reg_name_3:'Přihlášení – jméno 3',reg_dob_3:'Datum nar. 3',reg_rel_3:'Vztah 3',
+    unreg_name_1:'Odhlášení – jméno 1',unreg_dob_1:'Datum nar. 1',unreg_rel_1:'Vztah 1',
+    unreg_name_2:'Odhlášení – jméno 2',unreg_dob_2:'Datum nar. 2',unreg_rel_2:'Vztah 2',
+    unreg_name_3:'Odhlášení – jméno 3',unreg_dob_3:'Datum nar. 3',unreg_rel_3:'Vztah 3',
+    seller_name:'Prodávající',seller_phone:'Telefon',seller_email:'E-mail',seller_address:'Adresa',
+    buyer_name:'Kupující',buyer_phone:'Telefon',buyer_email:'E-mail',buyer_address:'Adresa',
+    meter_elec_id:'Elektroměr č.',meter_elec_val:'Stav elektroměru',
+    meter_gas_id:'Plynoměr č.',meter_gas_val:'Stav plynoměru',
+    meter_water_cold_id:'Vodoměr SV č.',meter_water_cold_val:'Stav SV',
+    meter_water_hot_id:'Vodoměr TV č.',meter_water_hot_val:'Stav TV',
+    heat_meters:'Měřiče tepla',defects:'Závady',handover_date:'Datum předání',
+  };
+
+  const fl = FORM_LABELS[r.form_type] || { icon:'📄', label: r.form_type };
+  const dataRows = Object.entries(r.data||{}).map(([k,v]) =>
+    `<div class="dr"><div class="dk">${FIELD_LABELS[k]||k}</div><div class="dv">${esc(v)}</div></div>`
+  ).join('');
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="dr"><div class="dk">Datum</div><div class="dv">${fmtDate(r.created_at)}</div></div>
+    <div class="dr"><div class="dk">Typ formuláře</div><div class="dv">${fl.icon} ${fl.label}</div></div>
+    <hr class="modal-div">
+    ${dataRows}
+    <hr class="modal-div">
+    <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem">Stav žádosti</div>
+    <div class="status-row">
+      <select class="status-sel" id="modalStatus">
+        <option value="new"         ${r.status==='new'?'selected':''}>🔵 Nová</option>
+        <option value="in_progress" ${r.status==='in_progress'?'selected':''}>🟡 Probíhá</option>
+        <option value="resolved"    ${r.status==='resolved'?'selected':''}>🟢 Vyřešena</option>
+      </select>
+      <button class="btn-save" onclick="saveStatus()">Uložit stav</button>
+      <span class="save-ok" id="saveOk">✓ Uloženo</span>
+      <button class="btn-del" onclick="deleteRow()">Smazat</button>
+    </div>`;
+
+  document.getElementById('overlay').classList.add('open');
+}
+
+async function saveStatus() {
+  const status = document.getElementById('modalStatus').value;
+  const { error } = await sb.from('submissions').update({ status }).eq('id', activeId);
+  if (!error) {
+    const idx = allRows.findIndex(r => r.id === activeId);
+    if (idx > -1) allRows[idx].status = status;
+    updateStats(allRows);
+    applyFilters();
+    const ok = document.getElementById('saveOk');
+    ok.classList.add('show');
+    setTimeout(() => ok.classList.remove('show'), 2000);
+  }
+}
+
+async function deleteRow() {
+  if (!confirm('Opravdu smazat tuto žádost? Akce je nevratná.')) return;
+  const { error } = await sb.from('submissions').delete().eq('id', activeId);
+  if (!error) {
+    allRows = allRows.filter(r => r.id !== activeId);
+    updateStats(allRows);
+    applyFilters();
+    closeModal();
+  }
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  activeId = null;
+}
+document.getElementById('modalClose').addEventListener('click', closeModal);
+document.getElementById('overlay').addEventListener('click', e => { if (e.target===e.currentTarget) closeModal(); });
+
+// ── CSV Export ────────────────────────────────────────────────────────────
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const cols = ['id','created_at','form_type','status'];
+  const header = [...cols, 'data'].join(',');
+  const rows = allRows.map(r =>
+    [...cols.map(c => '"' + String(r[c]||'').replace(/"/g,'""') + '"'),
+     '"' + JSON.stringify(r.data||{}).replace(/"/g,'""') + '"'
+    ].join(',')
+  );
+  const csv = [header, ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `zadosti_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+});
+
+// ── Auth ──────────────────────────────────────────────────────────────────
+// ── Simple hardcoded credentials (temporary) ─────────────────────────────
+const ADMIN_EMAIL    = 'admin@test.cz';
+const ADMIN_PASSWORD = 'admin';
+
+function checkSession() {
+  if (sessionStorage.getItem('mtbs_admin') === 'true') {
+    showApp(ADMIN_EMAIL);
+  }
+}
+
+function showApp(email) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'block';
+  document.getElementById('sbUser').textContent = email;
+  loadData();
+  setInterval(loadData, 60000);
+}
+
+document.getElementById('loginForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const err      = document.getElementById('loginErr');
+  const btn      = document.getElementById('loginBtn');
+  const email    = document.getElementById('l-email').value.trim();
+  const password = document.getElementById('l-pass').value;
+
+  err.className = 'login-err';
+
+  if (!email || !password) {
+    err.textContent = 'Vyplňte e-mail a heslo.';
+    err.className = 'login-err show'; return;
+  }
+
+  if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    sessionStorage.setItem('mtbs_admin', 'true');
+    showApp(email);
+  } else {
+    err.textContent = 'Nesprávné přihlašovací údaje.';
+    err.className = 'login-err show';
+    btn.disabled = false; btn.textContent = 'Přihlásit se';
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  sessionStorage.removeItem('mtbs_admin');
+  location.reload();
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────
+checkSession();
+</script>
+</body>
+</html>
