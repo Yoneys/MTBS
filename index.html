@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTBS Holýšov s.r.o. – Správa nemovitostí</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+
+:root {
+  --navy:      #0d1b2e;
+  --navy-2:    #162540;
+  --navy-3:    #1e3255;
+  --steel:     #2a547e;
+  --sky:       #4a9eca;
+  --gold:      #c8922a;
+  --gold-2:    #e0aa45;
+  --gold-3:    #f0c96a;
+  --cream:     #f4efe6;
+  --warm:      #faf7f2;
+  --text:      #111827;
+  --muted:     #6b7280;
+  --border:    rgba(15,31,53,0.1);
+  --success:   #166534;
+  --error-c:   #991b1b;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--warm);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+/* ── NAV ───────────────────────────────────────────────────────────────── */
+nav {
+  position: fixed; top:0; left:0; right:0; z-index:100;
+  height: 68px;
+  background: rgba(13,27,46,0.97);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(200,146,42,0.2);
+  display: flex; align-items:center; justify-content:space-between;
+  padding: 0 3rem;
+}
+.nav-brand {
+  font-family: 'DM Serif Display', serif;
+  color: var(--cream); font-size: 1.1rem;
+  display: flex; align-items:center; gap:.6rem; text-decoration:none;
+}
+.nav-brand-dot { width:7px; height:7px; background:var(--gold); border-radius:50%; flex-shrink:0; }
+.nav-links { display:flex; gap:1.75rem; list-style:none; }
+.nav-links a {
+  color: rgba(244,239,230,0.6);
+  text-decoration:none; font-size:.8rem; font-weight:500;
+  letter-spacing:.07em; text-transform:uppercase;
+  transition: color .2s;
+}
+.nav-links a:hover { color: var(--gold-2); }
+.nav-cta {
+  background: var(--gold); color: var(--navy) !important;
+  padding: .45rem 1.1rem; border-radius:4px;
+  font-weight:700 !important; transition: background .2s !important;
+}
+.nav-cta:hover { background: var(--gold-2) !important; }
+
+/* ── HERO ──────────────────────────────────────────────────────────────── */
+.hero {
+  min-height: 100vh;
+  background: var(--navy);
+  display: grid; grid-template-columns: 1fr 1fr;
+  position: relative; overflow:hidden;
+}
+.hero-glow {
+  position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 50% at 75% 35%, rgba(74,158,202,.1) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 15% 80%, rgba(200,146,42,.07) 0%, transparent 50%);
+}
+.hero-grid {
+  position:absolute; inset:0; pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+.hero-left {
+  display:flex; flex-direction:column; justify-content:center;
+  padding: 9rem 3.5rem 5rem; position:relative; z-index:2;
+}
+.eyebrow {
+  display:flex; align-items:center; gap:.75rem;
+  color: var(--gold); font-size:.68rem; font-weight:700;
+  letter-spacing:.18em; text-transform:uppercase; margin-bottom:1.5rem;
+  opacity:0; animation: fadeUp .6s .2s forwards;
+}
+.eyebrow::before { content:''; width:28px; height:1px; background:var(--gold); }
+h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(2.6rem,4.5vw,3.8rem);
+  line-height:1.1; color: var(--cream); margin-bottom:1.4rem;
+  opacity:0; animation: fadeUp .7s .35s forwards;
+}
+h1 em { font-style:italic; color:var(--sky); }
+.hero-sub {
+  font-size:1rem; color:rgba(244,239,230,.6); line-height:1.75;
+  max-width:420px; margin-bottom:2.5rem;
+  opacity:0; animation: fadeUp .7s .5s forwards;
+}
+.hero-btns {
+  display:flex; gap:1rem; flex-wrap:wrap;
+  opacity:0; animation: fadeUp .7s .65s forwards;
+}
+.btn-gold {
+  background:var(--gold); color:var(--navy);
+  padding:.85rem 1.9rem; border-radius:5px;
+  font-weight:700; font-size:.88rem; letter-spacing:.04em;
+  text-decoration:none; display:inline-flex; align-items:center; gap:.5rem;
+  transition: all .2s; border:none; cursor:pointer; font-family:inherit;
+}
+.btn-gold:hover { background:var(--gold-2); transform:translateY(-2px); box-shadow:0 8px 24px rgba(200,146,42,.3); }
+.btn-outline {
+  border:1.5px solid rgba(244,239,230,.25); color:var(--cream);
+  padding:.85rem 1.9rem; border-radius:5px; font-weight:500;
+  font-size:.88rem; text-decoration:none; transition:all .2s;
+}
+.btn-outline:hover { border-color:var(--sky); color:var(--sky); }
+
+.hero-right {
+  display:flex; align-items:center; justify-content:center;
+  padding: 8rem 3rem 4rem 1rem; position:relative; z-index:2;
+  opacity:0; animation:fadeIn 1s .8s forwards;
+}
+.stats-card {
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:14px; padding:2rem;
+  backdrop-filter:blur(8px); width:100%; max-width:360px;
+  position:relative;
+}
+.stats-card::before {
+  content:''; position:absolute; top:-30px; right:-30px;
+  width:180px; height:180px;
+  background:radial-gradient(circle, rgba(74,158,202,.18), transparent 70%);
+  border-radius:50%; pointer-events:none;
+}
+.stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
+.stat-box {
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:9px; padding:1.25rem 1rem; text-align:center;
+}
+.stat-num {
+  font-family:'DM Serif Display',serif;
+  font-size:2rem; color:var(--gold-2); line-height:1; margin-bottom:.4rem;
+}
+.stat-lbl { font-size:.7rem; color:rgba(244,239,230,.45); letter-spacing:.05em; }
+.stats-footer {
+  margin-top:1.5rem; padding-top:1.25rem;
+  border-top:1px solid rgba(255,255,255,.08);
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:.78rem; color:rgba(244,239,230,.45);
+}
+.stats-footer strong { font-family:'DM Serif Display',serif; font-size:1.2rem; color:var(--sky); }
+
+/* ── SECTION COMMONS ───────────────────────────────────────────────────── */
+section { padding:6rem 3rem; }
+.container { max-width:1180px; margin:0 auto; }
+.sec-eyebrow {
+  color:var(--gold); font-size:.68rem; font-weight:700;
+  letter-spacing:.18em; text-transform:uppercase; margin-bottom:.7rem;
+}
+.sec-title {
+  font-family:'DM Serif Display',serif;
+  font-size:clamp(1.7rem,3vw,2.5rem);
+  line-height:1.15; color:var(--navy); margin-bottom:1rem;
+}
+.sec-title.light { color:var(--cream); }
+.sec-desc { font-size:.92rem; color:var(--muted); line-height:1.75; max-width:560px; }
+.sec-desc.light { color:rgba(244,239,230,.6); }
+
+/* reveal */
+.reveal { opacity:0; transform:translateY(24px); transition:opacity .6s ease, transform .6s ease; }
+.reveal.visible { opacity:1; transform:none; }
+.reveal.d1 { transition-delay:.1s; }
+.reveal.d2 { transition-delay:.2s; }
+.reveal.d3 { transition-delay:.3s; }
+.reveal.d4 { transition-delay:.4s; }
+
+/* ── ABOUT ─────────────────────────────────────────────────────────────── */
+.about { background:var(--cream); }
+.about-grid { display:grid; grid-template-columns:1fr 1fr; gap:5rem; align-items:center; }
+.about-text p { font-size:.92rem; color:#374151; line-height:1.8; margin-bottom:1rem; }
+.about-badges { display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1.5rem; }
+.badge-pill {
+  background:var(--navy); color:var(--cream);
+  padding:.35rem .9rem; border-radius:20px;
+  font-size:.72rem; font-weight:600; letter-spacing:.05em;
+}
+.about-visual {
+  background:var(--navy);
+  border-radius:14px; padding:2.5rem;
+  display:grid; grid-template-columns:1fr 1fr; gap:1px;
+  background-clip:border-box;
+  overflow:hidden;
+  border:1px solid rgba(200,146,42,.2);
+}
+.av-cell {
+  background:var(--navy-2);
+  padding:1.75rem 1.5rem;
+  transition:background .2s;
+}
+.av-cell:hover { background:var(--navy-3); }
+.av-icon { font-size:1.6rem; margin-bottom:.8rem; }
+.av-label {
+  font-family:'DM Serif Display',serif;
+  font-size:1rem; color:var(--cream); margin-bottom:.4rem;
+}
+.av-sub { font-size:.75rem; color:rgba(244,239,230,.45); line-height:1.5; }
+
+/* ── SERVICES ──────────────────────────────────────────────────────────── */
+.services { background:var(--warm); }
+.services-grid {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:1.5px; border-radius:12px; overflow:hidden;
+  background:rgba(15,31,53,.1); margin-top:3rem;
+}
+.srv-card {
+  background:white; padding:2.25rem 2rem; cursor:default;
+  position:relative; overflow:hidden; transition:background .25s;
+}
+.srv-card::after {
+  content:''; position:absolute; bottom:0; left:0; right:0;
+  height:3px; background:var(--gold);
+  transform:scaleX(0); transform-origin:left; transition:transform .3s;
+}
+.srv-card:hover { background:var(--navy); }
+.srv-card:hover::after { transform:scaleX(1); }
+.srv-card:hover .srv-icon { color:var(--gold-2); }
+.srv-card:hover .srv-name { color:var(--cream); }
+.srv-card:hover .srv-desc { color:rgba(244,239,230,.55); }
+.srv-icon { font-size:1.8rem; margin-bottom:1.1rem; color:var(--steel); transition:color .25s; }
+.srv-name { font-family:'DM Serif Display',serif; font-size:1.1rem; color:var(--navy); margin-bottom:.6rem; transition:color .25s; }
+.srv-desc { font-size:.82rem; color:var(--muted); line-height:1.6; transition:color .25s; }
+
+/* ── NEWS ──────────────────────────────────────────────────────────────── */
+.news { background:var(--navy); }
+.news-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.5rem; margin-top:3rem; }
+.news-card {
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:10px; padding:1.75rem;
+  transition:all .25s;
+}
+.news-card:hover {
+  background:rgba(255,255,255,.07);
+  border-color:rgba(200,146,42,.35);
+  transform:translateY(-4px);
+}
+.news-tag {
+  font-size:.65rem; font-weight:700; letter-spacing:.14em;
+  color:var(--gold); text-transform:uppercase; margin-bottom:.6rem;
+}
+.news-title {
+  font-family:'DM Serif Display',serif;
+  font-size:1.05rem; color:var(--cream); line-height:1.4; margin-bottom:.6rem;
+}
+.news-body { font-size:.8rem; color:rgba(244,239,230,.5); line-height:1.65; }
+
+/* ── CONTACT ───────────────────────────────────────────────────────────── */
+.contact { background:var(--cream); }
+.contact-grid { display:grid; grid-template-columns:1fr 1fr; gap:5rem; align-items:start; }
+.contact-info-block { display:flex; flex-direction:column; gap:1.5rem; margin-top:1.5rem; }
+.c-item { display:flex; gap:1rem; align-items:flex-start; }
+.c-icon {
+  width:40px; height:40px; background:var(--navy); border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1rem; flex-shrink:0;
+}
+.c-label { font-size:.7rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:.25rem; }
+.c-value { font-size:.88rem; color:var(--text); line-height:1.5; }
+
+.hours-grid { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; margin-top:1.5rem; }
+.hour-row { display:contents; }
+.hour-day { font-size:.8rem; font-weight:600; color:var(--navy); }
+.hour-time { font-size:.8rem; color:var(--muted); }
+
+/* ── Contact tabs ── */
+.contact-tabs {
+  display: flex; flex-wrap: wrap; gap: .5rem;
+  margin-bottom: 2rem;
+}
+.ctab {
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  padding: .45rem 1rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: .75rem; font-weight: 600;
+  color: var(--muted); cursor: pointer;
+  transition: all .2s;
+}
+.ctab:hover  { border-color: var(--steel); color: var(--navy); }
+.ctab.active { background: var(--navy); border-color: var(--navy); color: white; }
+
+/* ── Department panel ── */
+.dept-panel { display: none; }
+.dept-panel.active { display: block; }
+
+.dept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.person-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.4rem 1.5rem;
+  transition: box-shadow .2s, transform .2s;
+}
+.person-card:hover {
+  box-shadow: 0 6px 20px rgba(15,31,53,.08);
+  transform: translateY(-2px);
+}
+.person-card.wide { grid-column: span 2; }
+
+.pc-role {
+  font-size: .62rem; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: .35rem;
+}
+.pc-name {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.05rem; color: var(--navy);
+  margin-bottom: .9rem; line-height: 1.2;
+}
+.pc-name.dept { font-size: .9rem; font-style: italic; color: var(--muted); }
+.pc-contacts { display: flex; flex-direction: column; gap: .35rem; }
+.pc-row {
+  display: flex; align-items: center; gap: .6rem;
+  font-size: .78rem; color: var(--text);
+}
+.pc-row a { color: var(--steel); text-decoration: none; }
+.pc-row a:hover { text-decoration: underline; }
+.pc-ico {
+  width: 20px; height: 20px;
+  background: var(--warm); border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; flex-shrink: 0;
+}
+
+/* ── Right column (emergency + SVJ) ── */
+.contact-right { display: flex; flex-direction: column; gap: 1.25rem; }
+.contact-box {
+  background: var(--navy);
+  border-radius: 14px; padding: 2rem;
+  border: 1px solid rgba(200,146,42,.15);
+}
+.contact-box.light {
+  background: white;
+  border: 1px solid var(--border);
+}
+.cb-eyebrow {
+  font-size: .62rem; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: .4rem;
+}
+.contact-box.light .cb-eyebrow { color: var(--steel); }
+.cb-number {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem; color: var(--gold-2);
+  margin-bottom: .4rem; line-height: 1.1;
+}
+.contact-box.light .cb-number { color: var(--navy); font-size: 1.2rem; }
+.cb-desc {
+  font-size: .8rem; color: rgba(244,239,230,.5);
+  line-height: 1.6; margin-bottom: 0;
+}
+.contact-box.light .cb-desc { color: var(--muted); }
+.cb-divider {
+  border: none; border-top: 1px solid rgba(255,255,255,.08);
+  margin: 1.25rem 0;
+}
+.contact-box.light .cb-divider { border-color: var(--border); }
+
+@media(max-width:640px) {
+  .person-card.wide { grid-column: span 1; }
+}
+/* ── FORM SECTION ──────────────────────────────────────────────────────── */
+.form-section { background:var(--warm); }
+.form-card {
+  background:white; border:1px solid var(--border); border-radius:14px;
+  padding:2.75rem; box-shadow:0 4px 30px rgba(15,31,53,.07);
+  max-width:860px; margin:0 auto;
+}
+.form-sec-label {
+  font-size:.65rem; font-weight:700; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--gold);
+  padding-bottom:.5rem; border-bottom:1px solid rgba(200,146,42,.2);
+  margin-bottom:1.25rem;
+}
+.fg { display:grid; grid-template-columns:1fr 1fr; gap:1.1rem; margin-bottom:1.4rem; }
+.fg.three { grid-template-columns:1fr 1fr 1fr; }
+.fg.one   { grid-template-columns:1fr; }
+.field { display:flex; flex-direction:column; gap:.35rem; }
+.field.span2 { grid-column:span 2; }
+.field.span3 { grid-column:span 3; }
+label { font-size:.75rem; font-weight:600; color:var(--navy); }
+label .req { color:var(--gold); }
+input[type=text],input[type=email],input[type=tel],input[type=date],textarea {
+  font-family:'DM Sans',sans-serif; font-size:.88rem;
+  padding:.65rem .9rem;
+  border:1.5px solid rgba(15,31,53,.14);
+  border-radius:6px; background:var(--warm);
+  color:var(--text); outline:none; width:100%;
+  transition:border-color .2s, box-shadow .2s;
+}
+input:focus,textarea:focus {
+  border-color:var(--steel);
+  box-shadow:0 0 0 3px rgba(42,84,126,.1);
+  background:white;
+}
+input.err { border-color:var(--error-c); }
+.cur-wrap { position:relative; }
+.cur-wrap input { padding-left:2.1rem; }
+.cur-sym {
+  position:absolute; left:.8rem; top:50%; transform:translateY(-50%);
+  font-size:.82rem; color:var(--muted); font-weight:600; pointer-events:none;
+}
+textarea { resize:vertical; min-height:88px; }
+.f-hint { font-size:.68rem; color:var(--muted); }
+.f-err  { font-size:.68rem; color:var(--error-c); display:none; }
+hr.divider { border:none; border-top:1px solid var(--border); margin:1.5rem 0; }
+
+/* ── Form picker ── */
+.form-picker { text-align:center; padding:.5rem 0 1rem; }
+.form-picker-title { font-family:'DM Serif Display',serif; font-size:1.3rem; color:var(--navy); margin-bottom:.4rem; }
+.form-picker-sub   { font-size:.85rem; color:var(--muted); margin-bottom:2rem; }
+.form-type-grid    { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; }
+.form-type-btn {
+  border:1.5px solid var(--border); border-radius:10px;
+  padding:1.4rem .9rem; cursor:pointer; background:var(--warm);
+  transition:all .2s; text-align:center;
+  display:flex; flex-direction:column; align-items:center; gap:.5rem;
+}
+.form-type-btn:hover { border-color:var(--gold); background:white; transform:translateY(-2px); box-shadow:0 4px 16px rgba(15,31,53,.08); }
+.form-type-icon { font-size:1.8rem; line-height:1; }
+.form-type-name { font-size:.78rem; font-weight:700; color:var(--navy); line-height:1.3; }
+.form-type-desc { font-size:.66rem; color:var(--muted); line-height:1.4; }
+
+/* ── Active form header ── */
+.form-header {
+  display:flex; align-items:center; gap:1rem;
+  margin-bottom:1.75rem; padding-bottom:1.25rem; border-bottom:1px solid var(--border);
+}
+.form-header-icon {
+  width:44px; height:44px; background:var(--navy); border-radius:9px;
+  display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0;
+}
+.form-header-title { font-family:'DM Serif Display',serif; font-size:1.2rem; color:var(--navy); }
+.form-header-sub   { font-size:.75rem; color:var(--muted); margin-top:.15rem; }
+.back-btn {
+  margin-left:auto; background:none; border:1.5px solid var(--border);
+  color:var(--muted); padding:.4rem .9rem; border-radius:6px;
+  font-family:'DM Sans',sans-serif; font-size:.75rem; font-weight:600;
+  cursor:pointer; transition:all .2s; white-space:nowrap;
+}
+.back-btn:hover { border-color:var(--navy); color:var(--navy); }
+
+/* ── Person block ── */
+.person-block {
+  background:var(--warm); border:1px solid var(--border);
+  border-radius:9px; padding:1.25rem 1.5rem; margin-bottom:1.25rem;
+}
+.person-block-title {
+  font-size:.65rem; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--steel); margin-bottom:1rem;
+}
+
+.submit-btn {
+  width:100%; background:var(--navy); color:var(--cream);
+  border:none; padding:.95rem; border-radius:7px;
+  font-family:'DM Sans',sans-serif; font-size:.92rem; font-weight:700;
+  cursor:pointer; letter-spacing:.04em; transition:background .2s, transform .15s;
+}
+.submit-btn:hover { background:var(--navy-2); }
+.submit-btn:active { transform:scale(.99); }
+.submit-btn:disabled { opacity:.6; cursor:not-allowed; }
+.alert {
+  padding:.85rem 1.1rem; border-radius:7px; font-size:.85rem;
+  margin-bottom:1.25rem; display:none; line-height:1.5;
+}
+.alert.err  { background:#fef2f2; border:1px solid #fecaca; color:var(--error-c); }
+.alert.ok   { background:#f0fdf4; border:1px solid #bbf7d0; color:var(--success); }
+.alert.show { display:block; }
+
+.success-screen { display:none; text-align:center; padding:2.5rem 1rem; }
+.success-screen.show { display:block; }
+.success-circle {
+  width:60px; height:60px; background:var(--success); border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.8rem; margin:0 auto 1.25rem;
+}
+.success-screen h3 { font-family:'DM Serif Display',serif; font-size:1.5rem; color:var(--navy); margin-bottom:.6rem; }
+.success-screen p  { font-size:.88rem; color:var(--muted); margin-bottom:1.5rem; }
+.btn-restart {
+  background:var(--navy); color:var(--cream); border:none;
+  padding:.75rem 1.75rem; border-radius:7px; cursor:pointer;
+  font-family:'DM Sans',sans-serif; font-size:.88rem; font-weight:700; transition:background .2s;
+}
+.btn-restart:hover { background:var(--navy-2); }
+@media(max-width:700px){ .form-type-grid { grid-template-columns:1fr 1fr; } }
+@media(max-width:440px){ .form-type-grid { grid-template-columns:1fr; } }
+
+/* ── FOOTER ────────────────────────────────────────────────────────────── */
+footer {
+  background:#080f1a; padding:4rem 3rem 2rem;
+  color:rgba(244,239,230,.55);
+}
+.footer-grid {
+  display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:3.5rem;
+  max-width:1180px; margin:0 auto;
+  padding-bottom:2.5rem; border-bottom:1px solid rgba(255,255,255,.06);
+}
+.footer-brand { font-family:'DM Serif Display',serif; font-size:1.1rem; color:var(--cream); margin-bottom:.75rem; }
+.footer-brand-desc { font-size:.8rem; line-height:1.7; max-width:240px; margin-bottom:1.25rem; }
+.footer-contact-row { display:flex; gap:.6rem; font-size:.8rem; margin-bottom:.4rem; align-items:flex-start; }
+.footer-contact-row span:first-child { color:var(--gold); flex-shrink:0; }
+.footer-col-title { font-size:.65rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); margin-bottom:1.1rem; }
+.footer-links { list-style:none; }
+.footer-links li { margin-bottom:.5rem; }
+.footer-links a { color:rgba(244,239,230,.5); text-decoration:none; font-size:.8rem; transition:color .2s; }
+.footer-links a:hover { color:var(--cream); }
+.footer-bottom {
+  max-width:1180px; margin:2rem auto 0;
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:.72rem; color:rgba(244,239,230,.28);
+}
+.footer-bottom a { color:rgba(244,239,230,.4); text-decoration:none; }
+.footer-bottom a:hover { color:var(--gold); }
+
+/* ── KEYFRAMES ─────────────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(18px); }
+  to   { opacity:1; transform:none; }
+}
+@keyframes fadeIn {
+  from { opacity:0; }
+  to   { opacity:1; }
+}
+
+/* ── RESPONSIVE ────────────────────────────────────────────────────────── */
+@media (max-width:900px) {
+  nav { padding:0 1.5rem; }
+  .nav-links { display:none; }
+  .hero { grid-template-columns:1fr; }
+  .hero-right { display:none; }
+  .hero-left { padding:8rem 1.75rem 4rem; }
+  section { padding:4rem 1.5rem; }
+  .about-grid, .contact-grid { grid-template-columns:1fr; gap:2.5rem; }
+  .services-grid { grid-template-columns:1fr 1fr; }
+  .news-grid { grid-template-columns:1fr; }
+  .fg { grid-template-columns:1fr; }
+  .fg.three { grid-template-columns:1fr; }
+  .field.span2 { grid-column:span 1; }
+  .footer-grid { grid-template-columns:1fr 1fr; gap:2rem; }
+  .about-visual { grid-template-columns:1fr; }
+}
+@media (max-width:560px) {
+  .services-grid { grid-template-columns:1fr; }
+  .footer-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────────────────────── -->
+<nav>
+  <a href="#" class="nav-brand">
+    <span class="nav-brand-dot"></span>
+    MTBS Holýšov s.r.o.
+  </a>
+  <ul class="nav-links">
+    <li><a href="#o-spolecnosti">O nás</a></li>
+    <li><a href="#sluzby">Služby</a></li>
+    <li><a href="#novinky">Novinky</a></li>
+    <li><a href="#kontakt">Kontakt</a></li>
+    <li><a href="#zadost" class="nav-cta">Podat žádost</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ────────────────────────────────────────────────────────────── -->
+<section class="hero" id="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-left">
+    <div class="eyebrow">Správa nemovitostí · Holýšov</div>
+    <h1>Správa Vaší<br><em>nemovitosti</em><br>od roku 1998</h1>
+    <p class="hero-sub">
+      Zajišťujeme komplexní správu bytových i nebytových objektů, výrobu tepla a teplé vody,
+      údržbu komunikací a technické služby pro Město Holýšov a okolí.
+    </p>
+    <div class="hero-btns">
+      <a href="#sluzby" class="btn-gold">Naše služby →</a>
+      <a href="#kontakt" class="btn-outline">Kontaktujte nás</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="stats-card">
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-num">27+</div><div class="stat-lbl">let zkušeností</div></div>
+        <div class="stat-box"><div class="stat-num">100%</div><div class="stat-lbl">vlastnictví Města</div></div>
+        <div class="stat-box"><div class="stat-num">SVJ</div><div class="stat-lbl">správa & portál</div></div>
+        <div class="stat-box"><div class="stat-num">24/7</div><div class="stat-lbl">havarijní linka</div></div>
+      </div>
+      <div class="stats-footer">
+        <span>Společnost založena</span>
+        <strong>1998</strong>
+        <span>100% Město Holýšov</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── ABOUT ────────────────────────────────────────────────────────────── -->
+<section class="about" id="o-spolecnosti">
+  <div class="container">
+    <div class="about-grid">
+      <div class="about-text reveal">
+        <div class="sec-eyebrow">O společnosti</div>
+        <h2 class="sec-title">Kdo jsme<br>a co děláme</h2>
+        <p>Společnost <strong>MTBS Holýšov s.r.o.</strong> byla založena 1. 1. 1998 reorganizací příspěvkové organizace. Jsme 100% vlastněni Městem Holýšov a zapsáni v obchodním rejstříku u Krajského soudu Plzeň.</p>
+        <p>Hlavním předmětem naší činnosti je správa nemovitostí, výroba tepla a teplé užitkové vody, údržba komunikací a veřejných prostranství. Jsme držiteli příslušné licence a koncese na provoz tepelné energie.</p>
+        <p>Tepelná energie je dodávána jak do objektů vlastněných Městem Holýšov, tak cizím odběratelům. Disponujeme dostatečnou kapacitou pro převzetí, provozování a modernizaci tepelného zařízení.</p>
+        <div class="about-badges">
+          <span class="badge-pill">ISO certifikovaní</span>
+          <span class="badge-pill">Licence na teplo</span>
+          <span class="badge-pill">ANASOFT APR</span>
+          <span class="badge-pill">SVJ portál</span>
+        </div>
+      </div>
+      <div class="about-visual reveal d2">
+        <div class="av-cell">
+          <div class="av-icon">🏢</div>
+          <div class="av-label">Správa bytů</div>
+          <div class="av-sub">Bytové i nebytové prostory Města Holýšov</div>
+        </div>
+        <div class="av-cell">
+          <div class="av-icon">🔥</div>
+          <div class="av-label">Teplo & TUV</div>
+          <div class="av-sub">Výroba a distribuce tepelné energie</div>
+        </div>
+        <div class="av-cell">
+          <div class="av-icon">🔧</div>
+          <div class="av-label">Údržba</div>
+          <div class="av-sub">Instalatérské, zednické a elektro práce</div>
+        </div>
+        <div class="av-cell">
+          <div class="av-icon">🚜</div>
+          <div class="av-label">Tech. služby</div>
+          <div class="av-sub">Zimní údržba a sečení zelených ploch</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SERVICES ─────────────────────────────────────────────────────────── -->
+<section class="services" id="sluzby">
+  <div class="container">
+    <div class="reveal" style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:0">
+      <div>
+        <div class="sec-eyebrow">Produkty a služby</div>
+        <h2 class="sec-title">Komplexní správa<br>od A do Z</h2>
+      </div>
+      <a href="#zadost" class="btn-gold" style="margin-bottom:.3rem">Podat žádost →</a>
+    </div>
+    <div class="services-grid">
+      <div class="srv-card reveal d1">
+        <div class="srv-icon">🏠</div>
+        <div class="srv-name">Provoz domů</div>
+        <p class="srv-desc">Správa bytových a nebytových domů Města Holýšov. Vedení agendy nájemních vztahů a vyúčtování.</p>
+      </div>
+      <div class="srv-card reveal d2">
+        <div class="srv-icon">🔥</div>
+        <div class="srv-name">Tepelné hospodářství</div>
+        <p class="srv-desc">Výroba a distribuce tepla a TUV s platnou licencí. Správa kotelen a tepelných zařízení.</p>
+      </div>
+      <div class="srv-card reveal d3">
+        <div class="srv-icon">🔧</div>
+        <div class="srv-name">Provoz údržby</div>
+        <p class="srv-desc">Běžné opravy instalatérské, zednické a elektrikářské. Opravy objektů a bytů Města Holýšov.</p>
+      </div>
+      <div class="srv-card reveal d1">
+        <div class="srv-icon">🚜</div>
+        <div class="srv-name">Technické služby</div>
+        <p class="srv-desc">Zimní údržba komunikací, sečení zeleně, správa veřejných prostranství.</p>
+      </div>
+      <div class="srv-card reveal d2">
+        <div class="srv-icon">📊</div>
+        <div class="srv-name">Ekonomický provoz</div>
+        <p class="srv-desc">Vedení hospodářské činnosti Města, vyúčtování energií, vedení účetnictví SVJ.</p>
+      </div>
+      <div class="srv-card reveal d3">
+        <div class="srv-icon">🔵</div>
+        <div class="srv-name">Prodej PB lahví</div>
+        <p class="srv-desc">Prodej propan-butanových lahví a drobného instalačního materiálu pro veřejnost.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── NEWS ─────────────────────────────────────────────────────────────── -->
+<section class="news" id="novinky">
+  <div class="container">
+    <div class="reveal">
+      <div class="sec-eyebrow">Novinky</div>
+      <h2 class="sec-title light">Aktuální informace</h2>
+    </div>
+    <div class="news-grid">
+      <div class="news-card reveal d1">
+        <div class="news-tag">Srpen 2025</div>
+        <div class="news-title">Platby kartou nově k dispozici</div>
+        <p class="news-body">Od 27. srpna 2025 je možné platit faktury a nájemné prostřednictvím platebního terminálu na naší pobočce.</p>
+      </div>
+      <div class="news-card reveal d2">
+        <div class="news-tag">Únor 2025</div>
+        <div class="news-title">Zkrácení obchodního názvu</div>
+        <p class="news-body">S platností od 19. února 2025 se zkracuje a zjednodušuje obchodní název naší společnosti.</p>
+      </div>
+      <div class="news-card reveal d3">
+        <div class="news-tag">Průběžně</div>
+        <div class="news-title">Přímé telefonní linky</div>
+        <p class="news-body">Zprovoznili jsme přímé pevné linky: 379 491 175 (správa bytů) a 379 491 126 (kotelna, údržba).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CONTACT ───────────────────────────────────────────────────────────── -->
+<section class="contact" id="kontakt">
+  <div class="container">
+
+    <!-- Header -->
+    <div class="reveal" style="margin-bottom:2.5rem">
+      <div class="sec-eyebrow">Kontakt</div>
+      <h2 class="sec-title">Jsme tu pro Vás</h2>
+      <p class="sec-desc">Máte dotaz, potřebujete hlásit závadu nebo se chcete domluvit na schůzce? Neváhejte nás kontaktovat.</p>
+    </div>
+
+    <div class="contact-grid reveal">
+
+      <!-- LEFT: tabbed department directory -->
+      <div>
+        <!-- Tab bar -->
+        <div class="contact-tabs">
+          <button class="ctab active" onclick="showDept('spolecnost')">Společnost</button>
+          <button class="ctab" onclick="showDept('vedeni')">Vedení</button>
+          <button class="ctab" onclick="showDept('teplo')">Tepelné hosp.</button>
+          <button class="ctab" onclick="showDept('udrzba')">Údržba</button>
+          <button class="ctab" onclick="showDept('techsluzby')">Tech. služby</button>
+          <button class="ctab" onclick="showDept('ekonomika')">Ekonomický úsek</button>
+        </div>
+
+        <!-- ── PANEL: Společnost ── -->
+        <div class="dept-panel active" id="dept-spolecnost">
+          <div class="dept-grid">
+            <div class="person-card">
+              <div class="pc-role">Sídlo společnosti</div>
+              <div class="pc-name">MTBS Holýšov s.r.o.</div>
+              <div class="pc-contacts">
+                <div class="pc-row"><div class="pc-ico">📍</div>Náměstí 5. května 14, 345 62 Holýšov</div>
+                <div class="pc-row"><div class="pc-ico">📞</div><a href="tel:+420379491126">+420 379 491 126</a></div>
+                <div class="pc-row"><div class="pc-ico">✉️</div><a href="mailto:info@mtbs-holysov.cz">info@mtbs-holysov.cz</a></div>
+                <div class="pc-row"><div class="pc-ico">🌐</div><a href="https://www.mtbs-holysov.cz" target="_blank">www.mtbs-holysov.cz</a></div>
+                <div class="pc-row"><div class="pc-ico">📦</div>Datová schránka: zrrmcu9</div>
+              </div>
+            </div>
+            <div class="person-card">
+              <div class="pc-role">Úřední hodiny</div>
+              <div class="pc-name">Otevírací doba</div>
+              <div class="pc-contacts">
+                <div class="pc-row"><div class="pc-ico">🕐</div>Pondělí – Čtvrtek: 7:00 – 15:30</div>
+                <div class="pc-row"><div class="pc-ico">🕐</div>Pátek: 7:00 – 14:00</div>
+                <div class="pc-row"><div class="pc-ico">🚫</div>Víkend: Zavřeno</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── PANEL: Vedení ── -->
+        <div class="dept-panel" id="dept-vedeni">
+          <div class="dept-grid">
+            <div class="person-card">
+              <div class="pc-role">Jednatelka</div>
+              <div class="pc-name">Ladislava Bozděchová</div>
+              <div class="pc-contacts">
+                <div class="pc-row"><div class="pc-ico">📞</div><a href="tel:+420379423506">+420 379 423 506</a></div>
+                <div class="pc-row"><div class="pc-ico">📱</div><a href="tel:+420724240809">+420 724 240 809</a></div>
+                <div class="pc-row"><div class="pc-ico">✉️</div><a href="mailto:bozdechova@mtbs-holysov.cz">bozdechova@mtbs-holysov.cz</a></div>
+              </div>
+            </div>
+            <div class="person-card">
+              <div class="pc-role">Jednatel</div>
+              <div class="pc-name">Vladimír Trnka</div>
+              <div class="pc-contacts">
+                <div class="pc-row"><div class="pc-ico">📞</div><a href="tel:+420379423479">+420 379 423 479</a></div>
+                <div class="pc-row"><div class="pc-ico">📱</div><a href="tel:+420724096155">+420 724 096 155</a></div>
+                <div class="pc-row"><div class="pc-ico">✉️</div><a href="mailto:trnka@mtbs-holysov.cz">trnka@mtbs-holysov.cz</a></div>
+                <div class="pc-row"><div class="pc-ico">💬</div>Skype: mtbs.trnka</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── PANEL: Tepelné hospodářství ── -->
+        <div class="dept-panel" id="dept-teplo">
+          <div class="dept-grid">
+            <div class="person-card">
+              <div class="pc-role">Vedoucí tepelného hospodářství</div>
+              <div class="pc-name">Jan Procházka</div>
+              <div class="pc-contacts">
+                <div class="pc-row"><div class="pc-ico">📞</div><a href="tel:+420379491126">+420 379 491 126</a></div>
+                <div class="pc-row"><div class="pc-ico">✉️</div><a href="mailto:prochazka@mtbs-holysov.cz">prochazka@mtbs-holysov.cz</a></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── PANEL: Bytová údržba ── -->
+        <div class="dept-panel" id="dept-udrzba">
+          <div class="dept-grid">
+            <div class="person-card">
+              <div class="pc-role">Vedoucí údržby bytů</div>
+              <div class="pc-name">Jaroslav Hodek</div>
+              <div class="pc-contacts">
+                <div class="pc-row"><div class="pc-ico">📞</div><a href="tel:+420379491126">+420 379 491 126</a></div>
+                <div class="pc-row"><div class="pc-ico">✉️</div><a href="mailto:hodek@mtbs-holysov.cz">hodek@mtbs-holysov.cz</a></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── PANEL: Technické služby ── -->
+        <div class="dept-panel" id="dept-techsluzby">
+          <div class="dept-grid">
+            <div class="person-card">
+              <div class="pc-role">Technické služby</div>
+              <div class="pc-name">Vladimír Trnka</div>
+              <div class="pc-contacts">
+                <div class="pc-row"><div class="pc-ico">📞</div><a href="tel:+420379423479">+420 379 423 479</a></div>
+                <div class="pc-row"><div class="pc-ico">📱</div><a href="tel:+420724096155">+420 724 096 155</a></div>
+                <div class="pc-row"><div class="pc-ico">✉️</div><a href="mailto:trnka@mtbs-holysov.cz">trnka@mtbs-holysov.cz</a></div>
+              </div>
+            </div>
+            <div class="person-card">
+              <div class="pc-role">Technické služby</div>
+              <div class="pc-name">Ladislava Bozděchová</div>
+              <div class="pc-contacts">
+                <div class="pc-row"><div class="pc-ico">📞</div><a href="tel:+420379423506">+420 379 423 506</a></div>
+                <div class="pc-row"><div class="pc-ico">📱</div><a href="tel:+420724240809">+420 724 240 809</a></div>
+                <div class="pc-row"><div class="pc-ico">✉️</div><a href="mailto:bozdechova@mtbs-holysov.cz">bozdechova@mtbs-holysov.cz</a></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── PANEL: Ekonomický úsek ── -->
+        <div class="dept-panel" id="dept-ekonomika">
+          <div class="dept-grid">
+            <div class="person-card">
+              <div class="pc-role">Ekonomický úsek – obecný kontakt</div>
+              <div class="pc-name dept">Oddělení</div>
+              <div class="pc-contacts">
+                <div class="pc-row"><div class="pc-ico">📞</div><a href="tel:+420379491175">+420 379 491 175</a></div>
+                <div class="pc-row"><div class="pc-ico">✉️</div><a href="mailto:info@mtbs-holysov.cz">info@mtbs-holysov.cz</a></div>
+              </div>
+            </div>
+            <div class="person-card">
+              <div class="pc-role">Vedoucí ekonomického úseku</div>
+              <div class="pc-name">Veronika Hodková</div>
+              <div class="pc-contacts">
+                <div class="pc-row"><div class="pc-ico">📞</div><a href="tel:+420379423505">+420 379 423 505</a></div>
+                <div class="pc-row"><div class="pc-ico">📱</div><a href="tel:+420776859422">+420 776 859 422</a></div>
+                <div class="pc-row"><div class="pc-ico">✉️</div><a href="mailto:hodkova@mtbs-holysov.cz">hodkova@mtbs-holysov.cz</a></div>
+              </div>
+            </div>
+            <div class="person-card">
+              <div class="pc-role">Provoz domů</div>
+              <div class="pc-name">Marcela Boubelová</div>
+              <div class="pc-contacts">
+                <div class="pc-row"><div class="pc-ico">📞</div><a href="tel:+420379491471">+420 379 491 471</a></div>
+                <div class="pc-row"><div class="pc-ico">✉️</div><a href="mailto:boubelova@mtbs-holysov.cz">boubelova@mtbs-holysov.cz</a></div>
+              </div>
+            </div>
+            <div class="person-card">
+              <div class="pc-role">Účetní SVJ</div>
+              <div class="pc-name">Jitka Šmídová</div>
+              <div class="pc-contacts">
+                <div class="pc-row"><div class="pc-ico">📞</div><a href="tel:+420379423730">+420 379 423 730</a></div>
+                <div class="pc-row"><div class="pc-ico">✉️</div><a href="mailto:smidova@mtbs-holysov.cz">smidova@mtbs-holysov.cz</a></div>
+              </div>
+            </div>
+            <div class="person-card">
+              <div class="pc-role">Pokladní</div>
+              <div class="pc-name">Miluše Dopiráková</div>
+              <div class="pc-contacts">
+                <div class="pc-row"><div class="pc-ico">📞</div><a href="tel:+420379491175">+420 379 491 175</a></div>
+                <div class="pc-row"><div class="pc-ico">📱</div><a href="tel:+420724240830">+420 724 240 830</a></div>
+                <div class="pc-row"><div class="pc-ico">✉️</div><a href="mailto:dopirakova@mtbs-holysov.cz">dopirakova@mtbs-holysov.cz</a></div>
+              </div>
+            </div>
+            <div class="person-card">
+              <div class="pc-role">Fakturace</div>
+              <div class="pc-name">Eva Volfová</div>
+              <div class="pc-contacts">
+                <div class="pc-row"><div class="pc-ico">📞</div><a href="tel:+420379491126">+420 379 491 126</a></div>
+                <div class="pc-row"><div class="pc-ico">✉️</div><a href="mailto:volfova@mtbs-holysov.cz">volfova@mtbs-holysov.cz</a></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /left col -->
+
+      <!-- RIGHT: emergency + SVJ boxes -->
+      <div class="contact-right reveal d2">
+        <div class="contact-box">
+          <div class="cb-eyebrow">Havarijní linka</div>
+          <div class="cb-number">379 491 126</div>
+          <p class="cb-desc">Poruchy tepla, vody a havarijní stavy – dostupné 24 hodin denně, 7 dní v týdnu.</p>
+          <hr class="cb-divider">
+          <div class="cb-eyebrow">Portál SVJ</div>
+          <p class="cb-desc" style="margin-bottom:1.25rem">Zástupci společenství vlastníků mají přístup k online agendě účetnictví SVJ.</p>
+          <a href="#" class="btn-gold" style="display:inline-flex;font-size:.82rem;padding:.65rem 1.4rem">Přihlásit do portálu →</a>
+        </div>
+
+        <div class="contact-box light">
+          <div class="cb-eyebrow">Datová schránka</div>
+          <div class="cb-number">zrrmcu9</div>
+          <p class="cb-desc">Pro doručování úředních dokumentů a elektronickou komunikaci.</p>
+          <hr class="cb-divider">
+          <div class="cb-eyebrow">Hlavní e-mail</div>
+          <p class="cb-desc"><a href="mailto:info@mtbs-holysov.cz" style="color:var(--steel)">info@mtbs-holysov.cz</a></p>
+        </div>
+      </div>
+
+    </div><!-- /contact-grid -->
+  </div>
+</section>
+
+<!-- ── FORM ──────────────────────────────────────────────────────────────── -->
+<section class="form-section" id="zadost">
+  <div class="container">
+    <div class="reveal" style="text-align:center;margin-bottom:2.5rem">
+      <div class="sec-eyebrow" style="justify-content:center;display:flex">Formuláře</div>
+      <h2 class="sec-title" style="margin:0 auto .75rem">Odeslat novou žádost</h2>
+      <p class="sec-desc" style="margin:0 auto;text-align:center">
+        Vyberte typ žádosti, vyplňte formulář a odešlete elektronicky. Vaše údaje jsou ukládány bezpečně.
+      </p>
+    </div>
+
+    <div class="form-card reveal d2" id="formCard">
+
+      <!-- ── SUCCESS SCREEN ── -->
+      <div class="success-screen" id="successScreen">
+        <div class="success-circle">✓</div>
+        <h3>Žádost odeslána</h3>
+        <p>Vaše žádost byla úspěšně přijata.<br>Budeme Vás kontaktovat na zadaný e-mail nebo telefon.</p>
+        <button class="btn-restart" onclick="showPicker()">Odeslat další žádost</button>
+      </div>
+
+      <!-- ── FORM PICKER ── -->
+      <div id="formPicker">
+        <div class="form-picker">
+          <div class="form-picker-title">Jaký formulář chcete vyplnit?</div>
+          <div class="form-picker-sub">Vyberte jeden z dostupných formulářů níže</div>
+          <div class="form-type-grid">
+            <button class="form-type-btn" onclick="showForm('poplatky')">
+              <div class="form-type-icon">💰</div>
+              <div class="form-type-name">Změna měsíčních poplatků</div>
+              <div class="form-type-desc">Žádost o změnu výše záloh</div>
+            </button>
+            <button class="form-type-btn" onclick="showForm('osoby')">
+              <div class="form-type-icon">👥</div>
+              <div class="form-type-name">Oznámení o počtu osob</div>
+              <div class="form-type-desc">Přihlášení / odhlášení osob v bytě</div>
+            </button>
+            <button class="form-type-btn" onclick="showForm('platce')">
+              <div class="form-type-icon">🔄</div>
+              <div class="form-type-name">Změna plátce záloh</div>
+              <div class="form-type-desc">Změna plátce za užívání bytu</div>
+            </button>
+            <button class="form-type-btn" onclick="showForm('protokol')">
+              <div class="form-type-icon">📋</div>
+              <div class="form-type-name">Předávací protokol</div>
+              <div class="form-type-desc">Protokol k předání / převzetí bytu</div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ALERT (shared) ── -->
+      <div class="alert" id="alertBox" style="margin-top:1rem"></div>
+
+      <!-- ════════════════════════════════════════════
+           FORM 1 – ZMĚNA POPLATKŮ
+      ════════════════════════════════════════════ -->
+      <form id="form-poplatky" class="zadost-form" novalidate style="display:none">
+        <div class="form-header">
+          <div class="form-header-icon">💰</div>
+          <div>
+            <div class="form-header-title">Změna měsíčních poplatků</div>
+            <div class="form-header-sub">Žádost o změnu výše záloh za užívání bytu</div>
+          </div>
+          <button type="button" class="back-btn" onclick="showPicker()">← Zpět</button>
+        </div>
+
+        <div class="form-sec-label">Osobní údaje</div>
+        <div class="fg">
+          <div class="field">
+            <label>Jméno a příjmení <span class="req">*</span></label>
+            <input type="text" name="name" placeholder="Jan Novák" autocomplete="name">
+          </div>
+          <div class="field">
+            <label>Telefon <span class="req">*</span></label>
+            <input type="tel" name="phone" placeholder="+420 777 000 000">
+          </div>
+          <div class="field span2">
+            <label>Adresa bytu <span class="req">*</span></label>
+            <input type="text" name="address" placeholder="Náměstí 5. května 14, Holýšov">
+          </div>
+          <div class="field span2">
+            <label>E-mail <span class="req">*</span></label>
+            <input type="email" name="email" placeholder="jan.novak@email.cz">
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div class="form-sec-label">Poplatky (v CZK)</div>
+        <div class="fg three">
+          <div class="field">
+            <label>Aktuální poplatek <span class="req">*</span></label>
+            <div class="cur-wrap"><span class="cur-sym">Kč</span>
+              <input type="text" name="fee_current" inputmode="decimal" placeholder="0,00">
+            </div>
+            <span class="f-hint">Váš současný měsíční poplatek</span>
+          </div>
+          <div class="field">
+            <label>Požadovaný poplatek <span class="req">*</span></label>
+            <div class="cur-wrap"><span class="cur-sym">Kč</span>
+              <input type="text" name="fee_requested" inputmode="decimal" placeholder="0,00">
+            </div>
+            <span class="f-hint">Navrhovaná nová výše</span>
+          </div>
+          <div class="field">
+            <label>Ostatní poplatek</label>
+            <div class="cur-wrap"><span class="cur-sym">Kč</span>
+              <input type="text" name="fee_other" inputmode="decimal" placeholder="0,00">
+            </div>
+            <span class="f-hint">Jiný poplatek (volitelné)</span>
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div class="form-sec-label">Poznámka</div>
+        <div class="fg one" style="margin-bottom:1.75rem">
+          <div class="field">
+            <label>Důvod žádosti</label>
+            <textarea name="note" placeholder="Popište důvod žádosti o změnu poplatků…"></textarea>
+          </div>
+        </div>
+        <button type="submit" class="submit-btn">Odeslat žádost</button>
+      </form>
+
+      <!-- ════════════════════════════════════════════
+           FORM 2 – OZNÁMENÍ O POČTU OSOB
+      ════════════════════════════════════════════ -->
+      <form id="form-osoby" class="zadost-form" novalidate style="display:none">
+        <div class="form-header">
+          <div class="form-header-icon">👥</div>
+          <div>
+            <div class="form-header-title">Oznámení o počtu osob v bytě</div>
+            <div class="form-header-sub">Přihlášení nebo odhlášení osob z evidence</div>
+          </div>
+          <button type="button" class="back-btn" onclick="showPicker()">← Zpět</button>
+        </div>
+
+        <div class="form-sec-label">Údaje nájemce / vlastníka</div>
+        <div class="fg">
+          <div class="field">
+            <label>Jméno a příjmení <span class="req">*</span></label>
+            <input type="text" name="name" placeholder="Jan Novák">
+          </div>
+          <div class="field">
+            <label>Číslo bytu <span class="req">*</span></label>
+            <input type="text" name="flat_number" placeholder="12">
+          </div>
+          <div class="field span2">
+            <label>Adresa bytu <span class="req">*</span></label>
+            <input type="text" name="address" placeholder="Náměstí 5. května 14, Holýšov">
+          </div>
+          <div class="field">
+            <label>Mobil</label>
+            <input type="tel" name="mobile" placeholder="+420 777 000 000">
+          </div>
+          <div class="field">
+            <label>Telefon</label>
+            <input type="tel" name="phone" placeholder="+420 379 000 000">
+          </div>
+          <div class="field span2">
+            <label>E-mail</label>
+            <input type="email" name="email" placeholder="jan.novak@email.cz">
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div class="form-sec-label">a) Přihlášení do evidence</div>
+        <div class="fg" style="margin-bottom:.75rem">
+          <div class="field">
+            <label>Od data</label>
+            <input type="date" name="reg_date_from">
+          </div>
+        </div>
+        <div class="person-block" id="reg-persons">
+          <div class="person-block-title">Osoby k přihlášení</div>
+          <div class="fg three">
+            <div class="field"><label>Jméno a příjmení</label><input type="text" name="reg_name_1" placeholder="Jana Nováková"></div>
+            <div class="field"><label>Datum narození</label><input type="date" name="reg_dob_1"></div>
+            <div class="field"><label>Vztah</label><input type="text" name="reg_rel_1" placeholder="manžel/ka, dítě…"></div>
+            <div class="field"><label>Jméno a příjmení</label><input type="text" name="reg_name_2" placeholder=""></div>
+            <div class="field"><label>Datum narození</label><input type="date" name="reg_dob_2"></div>
+            <div class="field"><label>Vztah</label><input type="text" name="reg_rel_2" placeholder=""></div>
+            <div class="field"><label>Jméno a příjmení</label><input type="text" name="reg_name_3" placeholder=""></div>
+            <div class="field"><label>Datum narození</label><input type="date" name="reg_dob_3"></div>
+            <div class="field"><label>Vztah</label><input type="text" name="reg_rel_3" placeholder=""></div>
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div class="form-sec-label">b) Odhlášení z evidence</div>
+        <div class="fg" style="margin-bottom:.75rem">
+          <div class="field">
+            <label>Od data</label>
+            <input type="date" name="unreg_date_from">
+          </div>
+        </div>
+        <div class="person-block">
+          <div class="person-block-title">Osoby k odhlášení</div>
+          <div class="fg three">
+            <div class="field"><label>Jméno a příjmení</label><input type="text" name="unreg_name_1" placeholder=""></div>
+            <div class="field"><label>Datum narození</label><input type="date" name="unreg_dob_1"></div>
+            <div class="field"><label>Vztah</label><input type="text" name="unreg_rel_1" placeholder=""></div>
+            <div class="field"><label>Jméno a příjmení</label><input type="text" name="unreg_name_2" placeholder=""></div>
+            <div class="field"><label>Datum narození</label><input type="date" name="unreg_dob_2"></div>
+            <div class="field"><label>Vztah</label><input type="text" name="unreg_rel_2" placeholder=""></div>
+            <div class="field"><label>Jméno a příjmení</label><input type="text" name="unreg_name_3" placeholder=""></div>
+            <div class="field"><label>Datum narození</label><input type="date" name="unreg_dob_3"></div>
+            <div class="field"><label>Vztah</label><input type="text" name="unreg_rel_3" placeholder=""></div>
+          </div>
+        </div>
+
+        <div class="fg" style="margin-bottom:1.75rem">
+          <div class="field">
+            <label>Celkový počet osob užívajících byt</label>
+            <input type="text" name="total_persons" placeholder="2">
+          </div>
+        </div>
+        <button type="submit" class="submit-btn">Odeslat oznámení</button>
+      </form>
+
+      <!-- ════════════════════════════════════════════
+           FORM 3 – ZMĚNA PLÁTCE ZÁLOH
+      ════════════════════════════════════════════ -->
+      <form id="form-platce" class="zadost-form" novalidate style="display:none">
+        <div class="form-header">
+          <div class="form-header-icon">🔄</div>
+          <div>
+            <div class="form-header-title">Změna plátce záloh za užívání bytu</div>
+            <div class="form-header-sub">Přechod platební povinnosti na nového plátce</div>
+          </div>
+          <button type="button" class="back-btn" onclick="showPicker()">← Zpět</button>
+        </div>
+
+        <div class="form-sec-label">Údaje o bytové jednotce</div>
+        <div class="fg">
+          <div class="field span2">
+            <label>Adresa bytu <span class="req">*</span></label>
+            <input type="text" name="address" placeholder="Náměstí 5. května 14, Holýšov">
+          </div>
+          <div class="field">
+            <label>Číslo bytu <span class="req">*</span></label>
+            <input type="text" name="flat_number" placeholder="12">
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div class="person-block">
+          <div class="person-block-title">Původní plátce</div>
+          <div class="fg">
+            <div class="field span2">
+              <label>Jméno a příjmení <span class="req">*</span></label>
+              <input type="text" name="old_name" placeholder="Jan Novák">
+            </div>
+            <div class="field span2">
+              <label>Adresa</label>
+              <input type="text" name="old_address" placeholder="Náměstí 5. května 14, Holýšov">
+            </div>
+            <div class="field">
+              <label>Mobil</label>
+              <input type="tel" name="old_mobile" placeholder="+420 777 000 000">
+            </div>
+            <div class="field">
+              <label>Telefon</label>
+              <input type="tel" name="old_phone" placeholder="+420 379 000 000">
+            </div>
+            <div class="field span2">
+              <label>E-mail</label>
+              <input type="email" name="old_email" placeholder="puvodni@email.cz">
+            </div>
+          </div>
+        </div>
+
+        <div class="person-block">
+          <div class="person-block-title">Nový plátce</div>
+          <div class="fg">
+            <div class="field span2">
+              <label>Jméno a příjmení <span class="req">*</span></label>
+              <input type="text" name="new_name" placeholder="Marie Nováková">
+            </div>
+            <div class="field span2">
+              <label>Adresa</label>
+              <input type="text" name="new_address" placeholder="Náměstí 5. května 14, Holýšov">
+            </div>
+            <div class="field">
+              <label>Mobil</label>
+              <input type="tel" name="new_mobile" placeholder="+420 777 000 000">
+            </div>
+            <div class="field">
+              <label>Telefon</label>
+              <input type="tel" name="new_phone" placeholder="+420 379 000 000">
+            </div>
+            <div class="field span2">
+              <label>E-mail</label>
+              <input type="email" name="new_email" placeholder="novy@email.cz">
+            </div>
+          </div>
+        </div>
+
+        <div class="fg" style="margin-bottom:.75rem">
+          <div class="field">
+            <label>Změnu proveďte k datu <span class="req">*</span></label>
+            <input type="date" name="change_date">
+          </div>
+        </div>
+        <div class="fg one" style="margin-bottom:1.75rem">
+          <div class="field">
+            <label>Důvod změny</label>
+            <textarea name="reason" placeholder="Uveďte důvod změny plátce…"></textarea>
+          </div>
+        </div>
+        <button type="submit" class="submit-btn">Odeslat žádost o změnu</button>
+      </form>
+
+      <!-- ════════════════════════════════════════════
+           FORM 4 – PŘEDÁVACÍ PROTOKOL
+      ════════════════════════════════════════════ -->
+      <form id="form-protokol" class="zadost-form" novalidate style="display:none">
+        <div class="form-header">
+          <div class="form-header-icon">📋</div>
+          <div>
+            <div class="form-header-title">Předávací protokol k bytu</div>
+            <div class="form-header-sub">Protokol o předání a převzetí bytové jednotky</div>
+          </div>
+          <button type="button" class="back-btn" onclick="showPicker()">← Zpět</button>
+        </div>
+
+        <div class="person-block">
+          <div class="person-block-title">Původní vlastník / prodávající</div>
+          <div class="fg">
+            <div class="field">
+              <label>Jméno a příjmení <span class="req">*</span></label>
+              <input type="text" name="seller_name" placeholder="Jan Novák">
+            </div>
+            <div class="field">
+              <label>Telefon</label>
+              <input type="tel" name="seller_phone" placeholder="+420 777 000 000">
+            </div>
+            <div class="field span2">
+              <label>E-mail</label>
+              <input type="email" name="seller_email" placeholder="prodavajici@email.cz">
+            </div>
+            <div class="field span2">
+              <label>Kontaktní adresa</label>
+              <input type="text" name="seller_address" placeholder="Ulice 1, Město">
+            </div>
+          </div>
+        </div>
+
+        <div class="person-block">
+          <div class="person-block-title">Nový vlastník / kupující</div>
+          <div class="fg">
+            <div class="field">
+              <label>Jméno a příjmení <span class="req">*</span></label>
+              <input type="text" name="buyer_name" placeholder="Marie Nováková">
+            </div>
+            <div class="field">
+              <label>Telefon</label>
+              <input type="tel" name="buyer_phone" placeholder="+420 777 000 000">
+            </div>
+            <div class="field span2">
+              <label>E-mail</label>
+              <input type="email" name="buyer_email" placeholder="kupujici@email.cz">
+            </div>
+            <div class="field span2">
+              <label>Kontaktní adresa</label>
+              <input type="text" name="buyer_address" placeholder="Ulice 1, Město">
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div class="form-sec-label">Bytová jednotka</div>
+        <div class="fg three">
+          <div class="field">
+            <label>Číslo bytu <span class="req">*</span></label>
+            <input type="text" name="flat_number" placeholder="12">
+          </div>
+          <div class="field">
+            <label>Velikost (m²)</label>
+            <input type="text" name="flat_size" placeholder="58">
+          </div>
+          <div class="field">
+            <label>Dispozice</label>
+            <input type="text" name="flat_layout" placeholder="2+1">
+          </div>
+          <div class="field">
+            <label>Nadzemní podlaží</label>
+            <input type="text" name="flat_floor" placeholder="3">
+          </div>
+          <div class="field span2">
+            <label>Adresa <span class="req">*</span></label>
+            <input type="text" name="flat_address" placeholder="Náměstí 5. května 14, Holýšov">
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div class="form-sec-label">Stavy měřičů ke dni předání</div>
+        <div class="fg">
+          <div class="field">
+            <label>Elektroměr č.</label>
+            <input type="text" name="meter_elec_id" placeholder="číslo měřiče">
+          </div>
+          <div class="field">
+            <label>Stav elektroměru</label>
+            <input type="text" name="meter_elec_val" placeholder="kWh">
+          </div>
+          <div class="field">
+            <label>Plynoměr č.</label>
+            <input type="text" name="meter_gas_id" placeholder="číslo měřiče">
+          </div>
+          <div class="field">
+            <label>Stav plynoměru</label>
+            <input type="text" name="meter_gas_val" placeholder="m³">
+          </div>
+          <div class="field">
+            <label>Vodoměr SV č.</label>
+            <input type="text" name="meter_water_cold_id" placeholder="číslo měřiče">
+          </div>
+          <div class="field">
+            <label>Stav vodoměru SV</label>
+            <input type="text" name="meter_water_cold_val" placeholder="m³">
+          </div>
+          <div class="field">
+            <label>Vodoměr TV č.</label>
+            <input type="text" name="meter_water_hot_id" placeholder="číslo měřiče">
+          </div>
+          <div class="field">
+            <label>Stav vodoměru TV</label>
+            <input type="text" name="meter_water_hot_val" placeholder="m³">
+          </div>
+        </div>
+
+        <div class="fg one" style="margin-bottom:.75rem">
+          <div class="field">
+            <label>Poměrové měřiče tepla (čísla a stavy)</label>
+            <textarea name="heat_meters" rows="3" placeholder="např. měřič 001: 145 kWh, měřič 002: 98 kWh…"></textarea>
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div class="form-sec-label">Závady a předání</div>
+        <div class="fg one" style="margin-bottom:.75rem">
+          <div class="field">
+            <label>Shledané závady při předání bytu</label>
+            <textarea name="defects" placeholder="Popište případné závady, nebo napište &#34;Bez závad&#34;…"></textarea>
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:1.75rem">
+          <div class="field">
+            <label>Datum přechodu povinností vlastníka vůči SVJ <span class="req">*</span></label>
+            <input type="date" name="handover_date">
+          </div>
+        </div>
+        <button type="submit" class="submit-btn">Odeslat předávací protokol</button>
+      </form>
+
+    </div><!-- /form-card -->
+  </div>
+</section>
+
+<!-- ── FOOTER ────────────────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">MTBS Holýšov s.r.o.</div>
+      <p class="footer-brand-desc">Správa nemovitostí, tepelné hospodářství a technické služby. 100% vlastněno Městem Holýšov od roku 1998.</p>
+      <div class="footer-contact-row"><span>📍</span><span>Náměstí 5. května 14, 345 62 Holýšov</span></div>
+      <div class="footer-contact-row"><span>📞</span><span>379 491 175 · 379 491 126</span></div>
+      <div class="footer-contact-row"><span>✉️</span><span>info@mtbs-holysov.cz</span></div>
+    </div>
+    <div>
+      <div class="footer-col-title">Služby</div>
+      <ul class="footer-links">
+        <li><a href="#sluzby">Správa bytů</a></li>
+        <li><a href="#sluzby">Tepelné hospodářství</a></li>
+        <li><a href="#sluzby">Údržba</a></li>
+        <li><a href="#sluzby">Technické služby</a></li>
+        <li><a href="#sluzby">Ekonomický provoz</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Zákazníci</div>
+      <ul class="footer-links">
+        <li><a href="#zadost">Podat žádost</a></li>
+        <li><a href="#">Portál SVJ</a></li>
+        <li><a href="#">Formuláře</a></li>
+        <li><a href="#">Ceníky</a></li>
+        <li><a href="#">Časté otázky</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Společnost</div>
+      <ul class="footer-links">
+        <li><a href="#o-spolecnosti">O nás</a></li>
+        <li><a href="#novinky">Novinky</a></li>
+        <li><a href="#kontakt">Kontakt</a></li>
+        <li><a href="admin.html">Admin</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 MTBS Holýšov s.r.o.</span>
+    <span>Správa nemovitostí · Holýšov</span>
+  </div>
+</footer>
+
+<script>
+// ── Supabase config ──────────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://nrokpcfyrzmuvwlrmugx.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_KNtPHoMHflCdauw8iU1W2g_G4jl_H1s';
+// ────────────────────────────────────────────────────────────────────────────
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: { autoRefreshToken: false, persistSession: false }
+});
+
+// ── Scroll reveal ─────────────────────────────────────────────────────────────
+const observer = new IntersectionObserver(
+  entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+  { threshold: 0.1 }
+);
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ── Form picker navigation ────────────────────────────────────────────────────
+function showPicker() {
+  document.getElementById('successScreen').classList.remove('show');
+  document.getElementById('formPicker').style.display = '';
+  document.getElementById('alertBox').className = 'alert';
+  document.querySelectorAll('.zadost-form').forEach(f => f.style.display = 'none');
+  document.getElementById('formCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showForm(type) {
+  document.getElementById('formPicker').style.display = 'none';
+  document.getElementById('alertBox').className = 'alert';
+  const form = document.getElementById('form-' + type);
+  if (form) {
+    form.style.display = '';
+    form.reset();
+    document.getElementById('formCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+// ── Alert helper ──────────────────────────────────────────────────────────────
+function showAlert(msg, type) {
+  const b = document.getElementById('alertBox');
+  b.textContent = msg;
+  b.className = `alert ${type} show`;
+  b.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Collect all named inputs from a form into an object ───────────────────────
+function collectForm(form) {
+  const data = {};
+  form.querySelectorAll('[name]').forEach(el => {
+    const v = el.value.trim();
+    if (v) data[el.name] = v;
+  });
+  return data;
+}
+
+// ── Generic submit handler ────────────────────────────────────────────────────
+async function handleSubmit(e, formType, requiredFields) {
+  e.preventDefault();
+  const form = e.target;
+  const btn  = form.querySelector('.submit-btn');
+
+  // Validate required fields
+  let ok = true;
+  requiredFields.forEach(name => {
+    const el = form.querySelector(`[name="${name}"]`);
+    if (!el || !el.value.trim()) {
+      if (el) el.classList.add('err');
+      ok = false;
+    }
+  });
+  if (!ok) { showAlert('Vyplňte prosím všechna povinná pole.', 'err'); return; }
+
+  // Email format check
+  form.querySelectorAll('input[type=email]').forEach(el => {
+    if (el.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value)) {
+      el.classList.add('err'); ok = false;
+    }
+  });
+  if (!ok) { showAlert('Zkontrolujte formát e-mailové adresy.', 'err'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Odesílám…';
+
+  const payload = { form_type: formType, data: collectForm(form) };
+  const { error } = await sb.from('submissions').insert([payload]);
+
+  if (error) {
+    showAlert('Chyba při odesílání: ' + error.message, 'err');
+    btn.disabled = false;
+    btn.textContent = form.querySelector('.submit-btn').dataset.label || 'Odeslat';
+  } else {
+    form.style.display = 'none';
+    document.getElementById('formPicker').style.display = 'none';
+    document.getElementById('alertBox').className = 'alert';
+    document.getElementById('successScreen').classList.add('show');
+    document.getElementById('formCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  btn.disabled = false;
+}
+
+// ── Wire up each form ─────────────────────────────────────────────────────────
+document.getElementById('form-poplatky').addEventListener('submit', e =>
+  handleSubmit(e, 'zmena_poplatku', ['name','phone','address','email','fee_current','fee_requested']));
+
+document.getElementById('form-osoby').addEventListener('submit', e =>
+  handleSubmit(e, 'oznameni_osob', ['name','flat_number','address']));
+
+document.getElementById('form-platce').addEventListener('submit', e =>
+  handleSubmit(e, 'zmena_platce', ['address','flat_number','old_name','new_name','change_date']));
+
+document.getElementById('form-protokol').addEventListener('submit', e =>
+  handleSubmit(e, 'predavaci_protokol', ['seller_name','buyer_name','flat_number','flat_address','handover_date']));
+
+// Clear err highlight on input
+document.querySelectorAll('input, textarea').forEach(el => {
+  el.addEventListener('input', () => el.classList.remove('err'));
+});
+
+// for contacts 
+function showDept(id) {
+  document.querySelectorAll('.dept-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.ctab').forEach(b => b.classList.remove('active'));
+  document.getElementById('dept-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+</script>
+</body>
+</html>
