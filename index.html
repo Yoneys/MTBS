@@ -246,6 +246,22 @@ section { padding:6rem 3rem; }
 .srv-name { font-family:'DM Serif Display',serif; font-size:1.1rem; color:var(--navy); margin-bottom:.6rem; transition:color .25s; }
 .srv-desc { font-size:.82rem; color:var(--muted); line-height:1.6; transition:color .25s; }
 
+
+/* Service details dialog */
+.srv-card.has-details { cursor:pointer; }
+.srv-card.has-details:focus-visible { outline:3px solid var(--gold); outline-offset:-4px; }
+.service-dialog { position:fixed; inset:0; z-index:300; display:none; align-items:center; justify-content:center; padding:1rem; background:rgba(8,15,26,.72); backdrop-filter:blur(4px); }
+.service-dialog.open { display:flex; }
+.service-dialog-panel { position:relative; width:min(100%,680px); max-height:min(88vh,760px); overflow:auto; background:var(--warm); color:var(--navy); border-radius:14px; padding:2rem 2.25rem; box-shadow:0 24px 80px rgba(0,0,0,.3); }
+.service-dialog-close { position:absolute; top:1rem; right:1rem; border:0; background:none; color:var(--muted); font-size:1.8rem; line-height:1; cursor:pointer; }
+.service-dialog-title { padding-right:2rem; margin-bottom:1.25rem; font:1.7rem 'DM Serif Display',serif; }
+.service-dialog-copy { font-size:.92rem; line-height:1.75; color:#374151; }
+.service-dialog-copy p { margin:0 0 1rem; }
+.service-dialog-copy h3 { margin:1.25rem 0 .5rem; font-size:1rem; color:var(--navy); }
+.service-dialog-copy ul { margin:.25rem 0 1rem 1.25rem; padding:0; }
+.service-dialog-copy li { margin:.3rem 0; padding-left:.15rem; }
+@media (max-width:600px) { .service-dialog-panel { padding:1.5rem 1.25rem; } .service-dialog-title { font-size:1.4rem; } }
+
 /* ── NEWS ──────────────────────────────────────────────────────────────── */
 .news { background:var(--navy); }
 .news-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.5rem; margin-top:3rem; }
@@ -554,6 +570,18 @@ footer {
   to   { opacity:1; }
 }
 
+.map-thumb { position:relative; height:150px; border-radius:8px; overflow:hidden; }
+.map-thumb iframe { width:100%; height:100%; border:0; display:block; pointer-events:none; }
+.map-expand { position:absolute; inset:0; width:100%; border:0; background:transparent; cursor:zoom-in; display:flex; align-items:flex-end; justify-content:flex-end; padding:.6rem; font-family:inherit; }
+.map-expand span { background:var(--navy); color:var(--cream); font-size:.72rem; font-weight:600; padding:.35rem .7rem; border-radius:4px; transition:background .2s; }
+.map-expand:hover span, .map-expand:focus-visible span { background:var(--steel); }
+.map-expand:focus-visible { outline:2px solid var(--sky); outline-offset:-2px; }
+.map-panel { width:min(100%,920px); padding:1.5rem; }
+.map-dialog-addr { font-size:.88rem; color:var(--muted); margin-bottom:1rem; padding-right:2rem; }
+.map-panel iframe { width:100%; height:min(65vh,540px); border:0; border-radius:8px; display:block; }
+.map-dialog-link { margin-top:.85rem; font-size:.85rem; }
+.map-dialog-link a { color:var(--steel); }
+
 /* ── RESPONSIVE ────────────────────────────────────────────────────────── */
 @media (max-width:900px) {
   nav { padding:0 1.5rem; }
@@ -590,6 +618,7 @@ footer {
     <li><a href="#sluzby">Služby</a></li>
     <li><a href="#novinky">Novinky</a></li>
     <li><a href="#kontakt">Kontakt</a></li>
+    <li><a href="portal-svj.html">Portál</a></li>
     <li><a href="#zadost" class="nav-cta">Podat žádost</a></li>
   </ul>
 </nav>
@@ -681,12 +710,12 @@ footer {
       <a href="#zadost" class="btn-gold" style="margin-bottom:.3rem">Podat žádost →</a>
     </div>
     <div class="services-grid">
-      <div class="srv-card reveal d1">
+      <div class="srv-card reveal d1 has-details" role="button" tabindex="0" data-service="homes" aria-haspopup="dialog">
         <div class="srv-icon">🏠</div>
         <div class="srv-name">Provoz domů</div>
         <p class="srv-desc">Správa bytových a nebytových domů Města Holýšov. Vedení agendy nájemních vztahů a vyúčtování.</p>
       </div>
-      <div class="srv-card reveal d2">
+      <div class="srv-card reveal d2 has-details" role="button" tabindex="0" data-service="heating" aria-haspopup="dialog">
         <div class="srv-icon">🔥</div>
         <div class="srv-name">Tepelné hospodářství</div>
         <p class="srv-desc">Výroba a distribuce tepla a TUV s platnou licencí. Správa kotelen a tepelných zařízení.</p>
@@ -701,7 +730,7 @@ footer {
         <div class="srv-name">Technické služby</div>
         <p class="srv-desc">Zimní údržba komunikací, sečení zeleně, správa veřejných prostranství.</p>
       </div>
-      <div class="srv-card reveal d2">
+      <div class="srv-card reveal d2 has-details" role="button" tabindex="0" data-service="economy" aria-haspopup="dialog">
         <div class="srv-icon">📊</div>
         <div class="srv-name">Ekonomický provoz</div>
         <p class="srv-desc">Vedení hospodářské činnosti Města, vyúčtování energií, vedení účetnictví SVJ.</p>
@@ -714,6 +743,25 @@ footer {
     </div>
   </div>
 </section>
+
+<!-- Service details popup -->
+<div class="service-dialog" id="mapDialog" role="dialog" aria-modal="true" aria-labelledby="mapDialogTitle" aria-hidden="true">
+  <div class="service-dialog-panel map-panel" role="document">
+    <button class="service-dialog-close" type="button" aria-label="Zavřít">&times;</button>
+    <h2 class="service-dialog-title" id="mapDialogTitle" style="margin-bottom:.25rem">Sídlo společnosti</h2>
+    <p class="map-dialog-addr">Náměstí 5. května 14, 345 62 Holýšov</p>
+    <iframe id="mapDialogFrame" title="Mapa – sídlo MTBS Holýšov s.r.o. (zvětšená)" data-src="https://maps.google.com/maps?q=49.5922482,13.0970071&amp;z=17&amp;hl=cs&amp;output=embed" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+    <p class="map-dialog-link"><a href="https://maps.app.goo.gl/xoYh3sXtJYz4AC7i9" target="_blank" rel="noopener">Otevřít v Mapách Google</a></p>
+  </div>
+</div>
+
+<div class="service-dialog" id="serviceDialog" role="dialog" aria-modal="true" aria-labelledby="serviceDialogTitle" aria-hidden="true">
+  <div class="service-dialog-panel" role="document">
+    <button class="service-dialog-close" type="button" aria-label="Zavřít">&times;</button>
+    <h2 class="service-dialog-title" id="serviceDialogTitle"></h2>
+    <div class="service-dialog-copy" id="serviceDialogCopy"></div>
+  </div>
+</div>
 
 <!-- ── NEWS ─────────────────────────────────────────────────────────────── -->
 <section class="news" id="novinky">
@@ -937,7 +985,7 @@ footer {
           <hr class="cb-divider">
           <div class="cb-eyebrow">Portál SVJ</div>
           <p class="cb-desc" style="margin-bottom:1.25rem">Zástupci společenství vlastníků mají přístup k online agendě účetnictví SVJ.</p>
-          <a href="#" class="btn-gold" style="display:inline-flex;font-size:.82rem;padding:.65rem 1.4rem">Přihlásit do portálu →</a>
+          <a href="portal-svj.html" class="btn-gold" style="display:inline-flex;font-size:.82rem;padding:.65rem 1.4rem">Přihlásit do portálu →</a>
         </div>
 
         <div class="contact-box light">
@@ -947,6 +995,14 @@ footer {
           <hr class="cb-divider">
           <div class="cb-eyebrow">Hlavní e-mail</div>
           <p class="cb-desc"><a href="mailto:info@mtbs-holysov.cz" style="color:var(--steel)">info@mtbs-holysov.cz</a></p>
+          <hr class="cb-divider">
+          <div class="cb-eyebrow">Sídlo společnosti</div>
+          <p class="cb-desc" style="margin-bottom:.9rem">Náměstí 5. května 14, 345 62 Holýšov</p>
+          <div class="map-thumb">
+            <iframe title="Mapa – sídlo MTBS Holýšov s.r.o." src="https://maps.google.com/maps?q=49.5922482,13.0970071&amp;z=17&amp;hl=cs&amp;output=embed" loading="lazy" tabindex="-1" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <button class="map-expand" type="button" id="mapOpen" aria-label="Zvětšit mapu"><span>Zvětšit mapu</span></button>
+          </div>
+          <p class="cb-desc" style="margin-top:.75rem"><a href="https://maps.app.goo.gl/xoYh3sXtJYz4AC7i9" target="_blank" rel="noopener" style="color:var(--steel)">Otevřít v Mapách Google</a></p>
         </div>
       </div>
 
@@ -1438,7 +1494,7 @@ footer {
       <div class="footer-col-title">Zákazníci</div>
       <ul class="footer-links">
         <li><a href="#zadost">Podat žádost</a></li>
-        <li><a href="#">Portál SVJ</a></li>
+        <li><a href="portal-svj.html">Portál SVJ</a></li>
         <li><a href="#">Formuláře</a></li>
         <li><a href="#">Ceníky</a></li>
         <li><a href="#">Časté otázky</a></li>
@@ -1470,6 +1526,113 @@ const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
+
+// ── Service detail popups ────────────────────────────────────────────────────
+const serviceDetails = {
+  homes: {
+    title: 'Provoz domů',
+    html: `<p>Zajišťujeme komplexní správu bytových a nebytových prostor a související administrativní a technickou agendu.</p>
+      <p>V rámci správy domů zajišťujeme zejména:</p>
+      <ul>
+        <li>evidenci vlastníků, nájemníků, bytových a nebytových prostor,</li>
+        <li>vedení a aktualizaci dokumentace a pasportů domů a jednotlivých prostor,</li>
+        <li>zajištění dodávek energií a služeb souvisejících s provozem objektů,</li>
+        <li>odečty měřidel a evidenci spotřeby,</li>
+        <li>zajištění pravidelných revizí, kontrol a dalších povinných činností,</li>
+        <li>zajištění oprav, údržby a běžného provozu objektů,</li>
+        <li>evidenci předpisů a plateb spojených s užíváním prostor,</li>
+        <li>spolupráci s dodavateli a dalšími subjekty,</li>
+        <li>přípravu podkladů pro roční vyúčtování služeb.</li>
+      </ul>
+      <p>Naším cílem je zajistit bezproblémový provoz a dlouhodobou péči o spravované objekty.</p>`
+  },
+  heating: {
+    title: 'Tepelné hospodářství',
+    html: `<p>Středisko tepelného hospodářství provozuje tepelné zdroje v majetku Města Holýšov a společnosti Plzeňská teplárenská Energetické služby, s.r.o. Zajišťujeme legislativní servis podle platných norem, vyhlášek a nařízení vlády o provozu tepelných zařízení.</p>
+      <p>Tepelná energie se z centrálních zdrojů rozvádí primárním potrubím do domovních předávacích stanic nebo přímo do vytápěných objektů. Zajišťujeme dodávku tepla pro ústřední vytápění a přípravu teplé užitkové vody pro sídliště Pod Makovým vrchem a Na Stráni.</p>
+      <h3>Výhody dodávky tepla z Holýšovské kotelny</h3>
+      <ul>
+        <li>cena tepla je konečná a nejsou s ní spojeny další výdaje,</li>
+        <li>dodávka tepla je zajištěna 24 hodin denně,</li>
+        <li>garantujeme sjednané parametry dodávaného tepla.</li>
+      </ul>
+      <h3>Naše služby</h3>
+      <ul>
+        <li>dodávka tepelné energie pro technologické účely, vytápění a ohřev teplé užitkové vody,</li>
+        <li>dodávka elektrické energie,</li>
+        <li>odborné poradenství při řešení zásobování objektů tepelnou energií,</li>
+        <li>odborné práce v oblasti technologií a měření spotřeby tepla.</li>
+      </ul>`
+  },
+  economy: {
+    title: 'Ekonomický provoz',
+    html: `<p>Ekonomický úsek zajišťuje komplexní účetní, ekonomickou a administrativní agendu společnosti a spravovaných objektů.</p>
+      <p>Mezi hlavní činnosti patří:</p>
+      <ul>
+        <li>vedení účetnictví, zpracování účetních závěrek a ekonomických přehledů,</li>
+        <li>evidence vlastníků, nájemníků, předpisů a plateb,</li>
+        <li>evidence a kontrola pohledávek a nedoplatků,</li>
+        <li>zpracování mzdové a personální agendy,</li>
+        <li>daňová agenda a komunikace s příslušnými úřady,</li>
+        <li>podklady pro ekonomické a finanční řízení,</li>
+        <li>administrativní podpora spravovaných objektů a SVJ,</li>
+        <li>podklady pro roční vyúčtování služeb.</li>
+      </ul>
+      <p>Úsek zajišťuje také účetní a související agendu pro společenství vlastníků jednotek, která máme ve správě.</p>`
+  }
+};
+const serviceDialog = document.getElementById('serviceDialog');
+const serviceDialogTitle = document.getElementById('serviceDialogTitle');
+const serviceDialogCopy = document.getElementById('serviceDialogCopy');
+let lastServiceCard = null;
+function openServiceDialog(card) {
+  const detail = serviceDetails[card.dataset.service];
+  if (!detail) return;
+  lastServiceCard = card;
+  serviceDialogTitle.textContent = detail.title;
+  serviceDialogCopy.innerHTML = detail.html;
+  serviceDialog.classList.add('open');
+  serviceDialog.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  serviceDialog.querySelector('.service-dialog-close').focus();
+}
+function closeServiceDialog() {
+  serviceDialog.classList.remove('open');
+  serviceDialog.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  if (lastServiceCard) lastServiceCard.focus();
+}
+document.querySelectorAll('.srv-card[data-service]').forEach(card => {
+  card.addEventListener('click', () => openServiceDialog(card));
+  card.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openServiceDialog(card); }
+  });
+});
+serviceDialog.querySelector('.service-dialog-close').addEventListener('click', closeServiceDialog);
+serviceDialog.addEventListener('click', e => { if (e.target === serviceDialog) closeServiceDialog(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && serviceDialog.classList.contains('open')) closeServiceDialog(); });
+
+// ── Map dialog ───────────────────────────────────────────────────────────────
+const mapDialog = document.getElementById('mapDialog');
+const mapFrame = document.getElementById('mapDialogFrame');
+const mapOpenBtn = document.getElementById('mapOpen');
+function openMapDialog() {
+  if (!mapFrame.src) mapFrame.src = mapFrame.dataset.src;
+  mapDialog.classList.add('open');
+  mapDialog.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  mapDialog.querySelector('.service-dialog-close').focus();
+}
+function closeMapDialog() {
+  mapDialog.classList.remove('open');
+  mapDialog.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  mapOpenBtn.focus();
+}
+mapOpenBtn.addEventListener('click', openMapDialog);
+mapDialog.querySelector('.service-dialog-close').addEventListener('click', closeMapDialog);
+mapDialog.addEventListener('click', e => { if (e.target === mapDialog) closeMapDialog(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && mapDialog.classList.contains('open')) closeMapDialog(); });
 
 // ── Scroll reveal ─────────────────────────────────────────────────────────────
 const observer = new IntersectionObserver(
