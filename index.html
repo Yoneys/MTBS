@@ -570,6 +570,18 @@ footer {
   to   { opacity:1; }
 }
 
+.map-thumb { position:relative; height:150px; border-radius:8px; overflow:hidden; }
+.map-thumb iframe { width:100%; height:100%; border:0; display:block; pointer-events:none; }
+.map-expand { position:absolute; inset:0; width:100%; border:0; background:transparent; cursor:zoom-in; display:flex; align-items:flex-end; justify-content:flex-end; padding:.6rem; font-family:inherit; }
+.map-expand span { background:var(--navy); color:var(--cream); font-size:.72rem; font-weight:600; padding:.35rem .7rem; border-radius:4px; transition:background .2s; }
+.map-expand:hover span, .map-expand:focus-visible span { background:var(--steel); }
+.map-expand:focus-visible { outline:2px solid var(--sky); outline-offset:-2px; }
+.map-panel { width:min(100%,920px); padding:1.5rem; }
+.map-dialog-addr { font-size:.88rem; color:var(--muted); margin-bottom:1rem; padding-right:2rem; }
+.map-panel iframe { width:100%; height:min(65vh,540px); border:0; border-radius:8px; display:block; }
+.map-dialog-link { margin-top:.85rem; font-size:.85rem; }
+.map-dialog-link a { color:var(--steel); }
+
 /* ── RESPONSIVE ────────────────────────────────────────────────────────── */
 @media (max-width:900px) {
   nav { padding:0 1.5rem; }
@@ -733,6 +745,16 @@ footer {
 </section>
 
 <!-- Service details popup -->
+<div class="service-dialog" id="mapDialog" role="dialog" aria-modal="true" aria-labelledby="mapDialogTitle" aria-hidden="true">
+  <div class="service-dialog-panel map-panel" role="document">
+    <button class="service-dialog-close" type="button" aria-label="Zavřít">&times;</button>
+    <h2 class="service-dialog-title" id="mapDialogTitle" style="margin-bottom:.25rem">Sídlo společnosti</h2>
+    <p class="map-dialog-addr">Náměstí 5. května 14, 345 62 Holýšov</p>
+    <iframe id="mapDialogFrame" title="Mapa – sídlo MTBS Holýšov s.r.o. (zvětšená)" data-src="https://maps.google.com/maps?q=49.5922482,13.0970071&amp;z=17&amp;hl=cs&amp;output=embed" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+    <p class="map-dialog-link"><a href="https://maps.app.goo.gl/xoYh3sXtJYz4AC7i9" target="_blank" rel="noopener">Otevřít v Mapách Google</a></p>
+  </div>
+</div>
+
 <div class="service-dialog" id="serviceDialog" role="dialog" aria-modal="true" aria-labelledby="serviceDialogTitle" aria-hidden="true">
   <div class="service-dialog-panel" role="document">
     <button class="service-dialog-close" type="button" aria-label="Zavřít">&times;</button>
@@ -976,7 +998,10 @@ footer {
           <hr class="cb-divider">
           <div class="cb-eyebrow">Sídlo společnosti</div>
           <p class="cb-desc" style="margin-bottom:.9rem">Náměstí 5. května 14, 345 62 Holýšov</p>
-          <iframe title="Mapa – sídlo MTBS Holýšov s.r.o." src="https://maps.google.com/maps?q=M%C4%9Bstsk%C3%A9+Technick%C3%A9+A+Bytov%C3%A9+St%C5%99edisko+Hol%C3%BD%C5%A1ov,+s.r.o.&amp;ll=49.5922482,13.0970071&amp;z=16&amp;hl=cs&amp;output=embed" style="width:100%;height:300px;border:0;border-radius:8px;display:block" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+          <div class="map-thumb">
+            <iframe title="Mapa – sídlo MTBS Holýšov s.r.o." src="https://maps.google.com/maps?q=49.5922482,13.0970071&amp;z=17&amp;hl=cs&amp;output=embed" loading="lazy" tabindex="-1" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <button class="map-expand" type="button" id="mapOpen" aria-label="Zvětšit mapu"><span>Zvětšit mapu</span></button>
+          </div>
           <p class="cb-desc" style="margin-top:.75rem"><a href="https://maps.app.goo.gl/xoYh3sXtJYz4AC7i9" target="_blank" rel="noopener" style="color:var(--steel)">Otevřít v Mapách Google</a></p>
         </div>
       </div>
@@ -1586,6 +1611,28 @@ document.querySelectorAll('.srv-card[data-service]').forEach(card => {
 serviceDialog.querySelector('.service-dialog-close').addEventListener('click', closeServiceDialog);
 serviceDialog.addEventListener('click', e => { if (e.target === serviceDialog) closeServiceDialog(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && serviceDialog.classList.contains('open')) closeServiceDialog(); });
+
+// ── Map dialog ───────────────────────────────────────────────────────────────
+const mapDialog = document.getElementById('mapDialog');
+const mapFrame = document.getElementById('mapDialogFrame');
+const mapOpenBtn = document.getElementById('mapOpen');
+function openMapDialog() {
+  if (!mapFrame.src) mapFrame.src = mapFrame.dataset.src;
+  mapDialog.classList.add('open');
+  mapDialog.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  mapDialog.querySelector('.service-dialog-close').focus();
+}
+function closeMapDialog() {
+  mapDialog.classList.remove('open');
+  mapDialog.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+  mapOpenBtn.focus();
+}
+mapOpenBtn.addEventListener('click', openMapDialog);
+mapDialog.querySelector('.service-dialog-close').addEventListener('click', closeMapDialog);
+mapDialog.addEventListener('click', e => { if (e.target === mapDialog) closeMapDialog(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && mapDialog.classList.contains('open')) closeMapDialog(); });
 
 // ── Scroll reveal ─────────────────────────────────────────────────────────────
 const observer = new IntersectionObserver(
