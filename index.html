@@ -779,7 +779,7 @@ html.theme-switching *:not(.reveal), html.theme-switching *:not(.reveal)::before
 }
 </style>
 </head>
-<body>
+<body data-page="index">
 
 <!-- ── NAV ─────────────────────────────────────────────────────────────── -->
 <nav aria-label="Hlavní navigace">
@@ -801,7 +801,7 @@ html.theme-switching *:not(.reveal), html.theme-switching *:not(.reveal)::before
       </button>
       <form class="nav-search" id="siteSearch" role="search" autocomplete="off">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-        <input type="search" id="siteSearchInput" placeholder="Hledat na stránce…" aria-label="Hledat na stránce" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="searchResults">
+        <input type="search" id="siteSearchInput" placeholder="Hledat na webu…" aria-label="Hledat na webu" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="searchResults">
         <div class="search-results" id="searchResults" role="listbox" hidden></div>
       </form>
       <a href="#zadost" class="nav-cta">Poslat žádost</a>
@@ -2124,24 +2124,9 @@ function showDept(id) {
 }
 </script>
 <script>
-// ── Nav: search + menu ───────────────────────────────────────────────────────
+// ── Hub views (Spravované objekty / Zákaznické centrum / Ke stažení) ─────────
+// Menu + search live in site-search.js (shared with portal-svj.html)
 (function () {
-  const nav       = document.querySelector('nav');
-  const menuBtn   = document.getElementById('navMenuBtn');
-  const menu      = document.getElementById('navMenu');
-  const searchBtn = document.getElementById('navSearchBtn');
-  const form      = document.getElementById('siteSearch');
-  const input     = document.getElementById('siteSearchInput');
-  const box       = document.getElementById('searchResults');
-
-  // Menu accordion
-  menu.querySelectorAll('.nm-acc').forEach(btn => btn.addEventListener('click', () => {
-    const open = btn.getAttribute('aria-expanded') !== 'true';
-    btn.setAttribute('aria-expanded', open);
-    document.getElementById(btn.getAttribute('aria-controls')).hidden = !open;
-  }));
-
-  // Hub views (Spravované objekty / Zákaznické centrum / Ke stažení)
   const hubs = [...document.querySelectorAll('.hub')];
   function setTab(hub, tab) {
     const tabs = [...hub.querySelectorAll('.hub-tab')];
@@ -2178,212 +2163,6 @@ function showDept(id) {
   })));
   window.addEventListener('hashchange', route);
   route();
-
-  // Menu
-  function setMenu(open) {
-    menu.hidden = !open;
-    menuBtn.setAttribute('aria-expanded', open);
-    if (open) { setSearchBar(false); hideResults(); }
-  }
-  menuBtn.addEventListener('click', () => setMenu(menu.hidden));
-  menu.addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
-
-  // Search bar (collapsed on narrow screens)
-  function setSearchBar(open) {
-    form.classList.toggle('open', open);
-    searchBtn.setAttribute('aria-expanded', open);
-    if (!open) hideResults();
-  }
-  searchBtn.addEventListener('click', () => {
-    const open = !form.classList.contains('open');
-    setSearchBar(open);
-    if (open) { setMenu(false); input.focus(); }
-  });
-
-  // Text helpers (diacritics-insensitive, length preserving)
-  const fold  = s => s.split('').map(c => ((c.normalize('NFD')[0] || c).toLowerCase()[0] || c)).join('');
-  const clean = s => s.replace(/\s+/g, ' ').trim();
-
-  // Index of page content
-  let index = null;
-  function buildIndex() {
-    const items = [];
-    const add = o => { o.text = clean(o.text); o.fText = fold(o.text); o.fTitle = fold(o.title); items.push(o); };
-    const q = (el, sel) => { const n = el.querySelector(sel); return n ? clean(n.textContent) : ''; };
-
-    document.querySelectorAll('.about-text p').forEach(el =>
-      add({ sec: 'O nás', title: 'Kdo jsme a co děláme', text: el.textContent, el }));
-    document.querySelectorAll('.av-cell').forEach(el =>
-      add({ sec: 'O nás', title: q(el, '.av-label'), text: q(el, '.av-label') + ' ' + q(el, '.av-sub'), el }));
-
-    document.querySelectorAll('.srv-card').forEach(el => {
-      let text = q(el, '.srv-name') + ' ' + q(el, '.srv-desc');
-      const key = el.dataset.service;
-      let detail = null;
-      try { detail = key ? serviceDetails[key] : null; } catch (err) { detail = null; }
-      if (detail) {
-        const tmp = document.createElement('div');
-        tmp.innerHTML = detail.html;
-        text += ' ' + tmp.textContent;
-      }
-      add({ sec: 'Služby', title: q(el, '.srv-name'), text, el, service: !!key });
-    });
-
-    document.querySelectorAll('.news-card').forEach(el =>
-      add({ sec: 'Novinky', title: q(el, '.news-title'), text: q(el, '.news-tag') + ' ' + q(el, '.news-title') + ' ' + q(el, '.news-body'), el }));
-
-    document.querySelectorAll('.person-card').forEach(el => {
-      const role = q(el, '.pc-role');
-      add({ sec: 'Kontakt' + (role ? ' · ' + role : ''), title: q(el, '.pc-name'), text: role + ' ' + q(el, '.pc-name') + ' ' + q(el, '.pc-contacts'), el });
-    });
-
-    document.querySelectorAll('#zadost .form-type-btn').forEach(el =>
-      add({ sec: 'Žádosti', title: q(el, '.form-type-name'), text: q(el, '.form-type-name') + ' ' + q(el, '.form-type-desc'), el }));
-    document.querySelectorAll('.hub-panel').forEach(el => {
-      const hub = el.closest('.hub');
-      const hubTitle = q(hub, '.sec-title');
-      const tabEl = hub.querySelector('.hub-tab[data-tab="' + el.dataset.tab + '"]');
-      const label = tabEl ? clean(tabEl.textContent) : '';
-      add({ sec: hubTitle, title: label, text: hubTitle + ' ' + label + ' ' + q(el, '.hub-card p'), el, route: hub.dataset.hub + '/' + el.dataset.tab });
-    });
-    return items;
-  }
-
-  function search(terms) {
-    const out = [];
-    for (const it of index) {
-      if (!terms.every(t => it.fText.includes(t))) continue;
-      let score = 0;
-      terms.forEach(t => { if (it.fTitle.includes(t)) score += 10; });
-      out.push({ it, score });
-    }
-    out.sort((a, b) => b.score - a.score);
-    return out.slice(0, 8).map(r => r.it);
-  }
-
-  function appendMarked(parent, text, ftext, terms) {
-    const marks = new Array(text.length).fill(false);
-    terms.forEach(t => {
-      let i = ftext.indexOf(t);
-      while (i > -1) { for (let k = i; k < i + t.length; k++) marks[k] = true; i = ftext.indexOf(t, i + 1); }
-    });
-    let i = 0;
-    while (i < text.length) {
-      let j = i;
-      while (j < text.length && marks[j] === marks[i]) j++;
-      const part = text.slice(i, j);
-      if (marks[i]) { const m = document.createElement('mark'); m.textContent = part; parent.append(m); }
-      else parent.append(part);
-      i = j;
-    }
-  }
-
-  function snippetFor(it, terms) {
-    const f = it.fText;
-    let pos = Infinity;
-    terms.forEach(t => { const i = f.indexOf(t); if (i > -1 && i < pos) pos = i; });
-    if (pos === Infinity) pos = 0;
-    let start = Math.max(0, pos - 45);
-    const sp = f.lastIndexOf(' ', start);
-    if (sp > -1 && start - sp < 20) start = sp + 1;
-    const end = Math.min(f.length, start + 150);
-    const frag = document.createDocumentFragment();
-    if (start > 0) frag.append('… ');
-    appendMarked(frag, it.text.slice(start, end), f.slice(start, end), terms);
-    if (end < f.length) frag.append(' …');
-    return frag;
-  }
-
-  function hideResults() { box.hidden = true; box.textContent = ''; input.setAttribute('aria-expanded', 'false'); }
-
-  function render() {
-    const value = input.value;
-    const terms = fold(value).split(/\s+/).filter(Boolean);
-    if (clean(value).length < 2) { hideResults(); return; }
-    if (!index) index = buildIndex();
-    const list = search(terms);
-    box.textContent = '';
-    if (!list.length) {
-      const d = document.createElement('div');
-      d.className = 'sr-empty';
-      d.textContent = 'Pro „' + clean(value) + '“ jsme nic nenašli. Zkuste jiné slovo.';
-      box.append(d);
-    } else {
-      list.forEach(it => {
-        const b = document.createElement('button');
-        b.type = 'button'; b.className = 'sr-item'; b.setAttribute('role', 'option');
-        const sec = document.createElement('div'); sec.className = 'sr-sec'; sec.textContent = it.sec;
-        const title = document.createElement('div'); title.className = 'sr-title';
-        appendMarked(title, it.title, it.fTitle, terms);
-        const snip = document.createElement('div'); snip.className = 'sr-snip';
-        snip.append(snippetFor(it, terms));
-        b.append(sec, title, snip);
-        b.addEventListener('click', () => go(it));
-        box.append(b);
-      });
-    }
-    box.hidden = false;
-    input.setAttribute('aria-expanded', 'true');
-  }
-
-  function go(it) {
-    hideResults(); setSearchBar(false); setMenu(false);
-    if (it.route) {
-      if (location.hash === '#' + it.route) { window.scrollTo({ top: 0, behavior: 'instant' }); return; }
-      location.hash = '#' + it.route;
-      return;
-    }
-    if (document.body.classList.contains('hub-open')) {
-      closeHub();
-      try { history.replaceState(null, '', location.pathname + location.search); } catch (err) {}
-    }
-    const panel = it.el.closest('.dept-panel');
-    if (panel) {
-      document.querySelectorAll('.dept-panel').forEach(p => p.classList.toggle('active', p === panel));
-      const key = panel.id.replace('dept-', '');
-      document.querySelectorAll('.ctab').forEach(b => b.classList.toggle('active', (b.getAttribute('onclick') || '').includes("'" + key + "'")));
-    }
-    const rev = it.el.closest('.reveal');
-    if (rev) rev.classList.add('visible');
-    it.el.classList.add('visible');
-    const target = it.el.offsetParent === null ? it.el.closest('section') : it.el;
-    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    if (it.service && typeof openServiceDialog === 'function') {
-      setTimeout(() => openServiceDialog(it.el), 350);
-    } else {
-      target.classList.remove('search-flash'); void target.offsetWidth;
-      target.classList.add('search-flash');
-      setTimeout(() => target.classList.remove('search-flash'), 2100);
-    }
-  }
-
-  input.addEventListener('input', render);
-  input.addEventListener('focus', () => { if (clean(input.value).length >= 2) render(); });
-  form.addEventListener('submit', e => { e.preventDefault(); const f = box.querySelector('.sr-item'); if (f) f.click(); });
-  input.addEventListener('keydown', e => {
-    const items = [...box.querySelectorAll('.sr-item')];
-    if (!items.length) return;
-    let i = items.findIndex(x => x.classList.contains('active'));
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (i > -1) items[i].classList.remove('active');
-      i = e.key === 'ArrowDown' ? (i + 1) % items.length : (i <= 0 ? items.length - 1 : i - 1);
-      items[i].classList.add('active');
-      items[i].scrollIntoView({ block: 'nearest' });
-    } else if (e.key === 'Enter' && i > -1) {
-      e.preventDefault(); items[i].click();
-    }
-  });
-
-  document.addEventListener('click', e => {
-    if (!menu.contains(e.target) && !menuBtn.contains(e.target)) setMenu(false);
-    if (!form.contains(e.target) && !searchBtn.contains(e.target)) { hideResults(); setSearchBar(false); }
-  });
-  document.addEventListener('keydown', e => {
-    if (e.key !== 'Escape') return;
-    setMenu(false);
-    if (!box.hidden || form.classList.contains('open')) { hideResults(); setSearchBar(false); }
-  });
 })();
 </script>
 
@@ -2403,5 +2182,6 @@ function showDept(id) {
   });
 })();
 </script>
+<script src="site-search.js"></script>
 </body>
 </html>
